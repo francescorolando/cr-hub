@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { ShieldIcon, CrownIcon, EvolutionIcon } from "@/components/icons";
+import { ShieldIcon, SwapIcon } from "@/components/icons";
 import Tooltip from "@/components/Tooltip";
 import CardImage from "@/components/CardImage";
 import { leagueName, bestSeasonResult } from "@/lib/leagues";
@@ -198,30 +198,32 @@ function DeckPanel({ player }) {
     );
 }
 
-const ROLE_META = {
-    champion: { tone: "border-gold text-gold", Icon: CrownIcon },
-    hero: { tone: "border-gem text-gem", Icon: CrownIcon },
+// un'unica icona (freccia di scambio) per tutti i ruoli invece di
+// corona/stella diverse: il colore del bordo distingue già il tipo
+// (oro=campione, verde=eroe, colore rarità=evoluto), l'icona resta sempre
+// bianca e uguale per dire solo "tocca per cambiare".
+const ROLE_TONE = {
+    champion: "border-gold bg-gold/90",
+    hero: "border-gem bg-gem/90",
+    evo: "border-elixir bg-elixir/90",
 };
 
 function DeckCard({ card, role, showPlaceholder, onCycle }) {
     const name = cardNameIt(card.name);
     const variant = role === "evo" ? "evo" : role === "hero" ? "hero" : "base";
-    const meta = role === "champion" || role === "hero" ? ROLE_META[role] : null;
 
     let badge = null;
     if (role === "champion") {
         badge = (
             <RoleBadge
-                tone={meta.tone}
-                Icon={meta.Icon}
+                tone={ROLE_TONE.champion}
                 tooltip="Campione: occupa uno slot Eroe/Jolly (automatico)."
             />
         );
     } else if (role === "hero") {
         badge = (
             <RoleBadge
-                tone={meta.tone}
-                Icon={meta.Icon}
+                tone={ROLE_TONE.hero}
                 tooltip="Segnato come Eroe in questo mazzo. Tocca per cambiare."
                 onClick={onCycle}
             />
@@ -229,8 +231,7 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
     } else if (role === "evo") {
         badge = (
             <RoleBadge
-                tone="border-elixir text-elixir"
-                Icon={EvolutionIcon}
+                tone={ROLE_TONE.evo}
                 tooltip={`Segnato come Evoluto (liv. ${card.evolutionLevel}). Tocca per cambiare.`}
                 onClick={onCycle}
             />
@@ -238,8 +239,7 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
     } else if (showPlaceholder) {
         badge = (
             <RoleBadge
-                tone="border-dashed border-muted text-muted opacity-40 hover:opacity-100"
-                label="+"
+                tone="border-dashed border-muted bg-royal-deep opacity-50 hover:opacity-100"
                 tooltip="Non ancora confermata: tocca se in questo mazzo è Evoluta o Eroe."
                 onClick={onCycle}
             />
@@ -247,14 +247,22 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
     }
 
     return (
-        <div className="relative" title={`${name} · Liv. ${card.level}/${card.maxLevel}`}>
+        <div
+            className="relative aspect-5/6 w-full"
+            title={`${name} · Liv. ${card.level}/${card.maxLevel}`}
+        >
+            {/* aspect-5/6 fisso (il rapporto 150:180 delle carte RoyaleAPI): se
+          per una carta specifica l'asset non si trova e si ricade
+          sull'icona ufficiale Supercell (285:420, più stretta e alta),
+          senza un contenitore a rapporto fisso quella carta risulterebbe
+          visibilmente più grande delle altre nello stesso mazzo. */}
             {badge && <div className="absolute top-0.5 right-0.5 z-10">{badge}</div>}
-            <CardImage card={card} variant={variant} alt={name} className="w-full" />
+            <CardImage card={card} variant={variant} alt={name} className="h-full w-full object-contain" />
         </div>
     );
 }
 
-function RoleBadge({ tone, Icon, label, tooltip, onClick }) {
+function RoleBadge({ tone, tooltip, onClick }) {
     const interactive = !!onClick;
     return (
         <Tooltip content={<p className="max-w-45 text-xs text-white/80">{tooltip}</p>}>
@@ -272,11 +280,11 @@ function RoleBadge({ tone, Icon, label, tooltip, onClick }) {
                           }
                         : undefined
                 }
-                className={`flex h-4 w-4 items-center justify-center rounded-full border bg-royal-deep font-num text-[9px] font-bold ${tone} ${
+                className={`flex h-4 w-4 items-center justify-center rounded-full border text-white ${tone} ${
                     interactive ? "cursor-pointer" : ""
                 }`}
             >
-                {Icon ? <Icon className="h-2.5 w-2.5" /> : label}
+                <SwapIcon className="h-2.5 w-2.5" />
             </span>
         </Tooltip>
     );

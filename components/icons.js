@@ -85,6 +85,18 @@ export function EvolutionIcon(props) {
   );
 }
 
+// due frecce che si "inseguono": indica in modo universale "tocca per
+// cambiare/ciclare", senza legarsi visivamente a un ruolo specifico
+// (corona, stella...) come le icone precedenti.
+export function SwapIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h13l-3-3" />
+      <path d="M20 17H7l3 3" />
+    </Icon>
+  );
+}
+
 export function GiftIcon(props) {
   return (
     <Icon {...props}>
