@@ -80,7 +80,9 @@ export default function ProfileHero({ player }) {
 
 function Chip({ iconUrl, iconClassName = "", label, value, className = "" }) {
     return (
-        <div className={`flex min-w-48 items-center gap-3 rounded-lg bg-panel-2 px-4 py-2.5 ${className}`}>
+        <div
+            className={`flex min-w-48 items-center gap-3 rounded-lg bg-panel-2 px-4 py-2.5 ${className}`}
+        >
             {iconUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -183,12 +185,12 @@ const ROLE_TONE = {
 // etichetta del PROSSIMO stato (quello che il tocco produrrà), non di quello
 // attuale — così il tooltip dice sempre "Cambia versione: X" con X = cosa
 // otterrai toccando, non una descrizione di dove sei già.
-const NEXT_ROLE_LABEL = { evo: "evoluzione", hero: "eroe", null: "normale" };
+const NEXT_ROLE_LABEL = { evo: "EVOLUZIONE", hero: "EROE", null: "NORMALE" };
 
 function DeckCard({ card, role, showPlaceholder, nextRole, onCycle }) {
     const name = cardNameIt(card.name);
     const variant = role === "evo" ? "evo" : role === "hero" ? "hero" : "base";
-    const changeTooltip = `Cambia versione: ${NEXT_ROLE_LABEL[nextRole]}`;
+    const changeTooltip = `Passa a: ${NEXT_ROLE_LABEL[nextRole]}`;
 
     let badge = null;
     if (role === "champion") {
