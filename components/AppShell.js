@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const NAV_LINKS = [
   { href: "/profilo", label: "Profilo" },
   { href: "/miglioramento", label: "Miglioramento" },
+  { href: "/confronto", label: "Confronto" },
 ];
 
 export default function AppShell({ children }) {
