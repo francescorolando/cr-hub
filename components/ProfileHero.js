@@ -203,9 +203,9 @@ function DeckPanel({ player }) {
 // (oro=campione, verde=eroe, colore rarità=evoluto), l'icona resta sempre
 // bianca e uguale per dire solo "tocca per cambiare".
 const ROLE_TONE = {
-    champion: "border-gold bg-gold/90",
-    hero: "border-yellow-400 bg-yellow-400/90",
-    evo: "border-elixir bg-elixir/90",
+    champion: "border-gold bg-gold",
+    hero: "border-yellow-400 bg-yellow-400",
+    evo: "border-elixir bg-elixir",
 };
 
 function DeckCard({ card, role, showPlaceholder, onCycle }) {
@@ -264,7 +264,7 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
             {/* in basso a destra, non in alto: l'ingrandimento di evoluzione/eroe
           cresce verso l'alto (origin-bottom), quindi il bordo basso è
           l'unico che resta fermo esattamente sull'angolo del contenitore. */}
-            {badge && <div className="absolute right-0.5 bottom-0.5 z-10">{badge}</div>}
+            {badge && <div className="absolute -right-1.5 -bottom-1.5 z-10">{badge}</div>}
             <CardImage
                 card={card}
                 variant={variant}
