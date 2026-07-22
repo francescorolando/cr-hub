@@ -81,25 +81,23 @@ export default function UpgradeCardRow({ card, blocks }) {
                         </p>
                     </div>
 
-                    {/* blocco 4: carte mancanti — a piena larghezza da mobile. Da 1024px
-              in su larghezza FISSA (lg:w-52): senza, si adattava al numero
-              di cifre di ogni carta e variava riga per riga, e siccome è
-              fratello del blocco barre in un flex-row, le barre stesse
-              risultavano di larghezza diversa da una riga all'altra.
-              208px misurati per stare larghi rispetto al caso reale più
-              largo di questo profilo (194px). */}
-                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-3 lg:w-52 lg:items-end">
+                    {/* blocco 4: carte mancanti — a piena larghezza da mobile. Numero e
+              gemme sono UN SOLO blocco di testo (whitespace-nowrap): non
+              possono più andare a capo indipendentemente l'uno dall'altro,
+              qualunque sia la larghezza disponibile. Da 1024px in su,
+              min-width invece di una larghezza fissa: resta uniforme nella
+              stragrande maggioranza dei casi ma cresce da sola se un numero
+              specifico ha bisogno di più spazio, invece di spezzare il testo. */}
+                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-3 lg:min-w-52 lg:items-end">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
                             Carte mancanti
                         </p>
-                        <div className="flex w-full items-baseline justify-between gap-3 lg:w-auto lg:justify-end lg:gap-2">
-                            <p className="font-num text-lg font-bold text-ink">
-                                {formatNumber(card.cardsNeeded)}
-                            </p>
-                            <p className="font-num text-lg font-semibold text-gem">
+                        <p className="whitespace-nowrap font-num text-base font-bold text-ink lg:text-lg">
+                            {formatNumber(card.cardsNeeded)}{" "}
+                            <span className="font-semibold text-gem">
                                 ≈ {formatNumber(card.gemsNeeded)} gemme
-                            </p>
-                        </div>
+                            </span>
+                        </p>
                     </div>
                 </>
             )}
