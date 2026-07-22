@@ -10,7 +10,7 @@ import "./globals.css";
 import AppShell from "@/components/AppShell";
 
 export const metadata = {
-    title: "Royale Companion",
+    title: "Royale Hub",
     description: "Profilo, progressione e miglioramento delle carte in tempo reale.",
 };
 

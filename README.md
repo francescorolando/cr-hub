@@ -1,4 +1,4 @@
-# Royale Companion
+# Royale Hub
 
 An unofficial Clash Royale companion app: player profile, current deck, and card-upgrade progression tracking, with live data from Supercell's official API.
 

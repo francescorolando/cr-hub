@@ -24,7 +24,7 @@ export default function AppShell({ children }) {
               <img src="/crown-logo.png" alt="" className="h-8 w-8 shrink-0 object-contain sm:h-11 sm:w-11" />
               <div className="min-w-0">
                 <p className="truncate font-display text-sm font-bold text-brand sm:text-2xl sm:tracking-wide">
-                  Royale Companion
+                  Royale Hub
                 </p>
                 <p className="hidden truncate text-sm text-muted sm:block">
                   Dati live dall&apos;API ufficiale di Clash Royale
