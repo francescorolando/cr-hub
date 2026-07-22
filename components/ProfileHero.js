@@ -261,7 +261,10 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
             className="relative aspect-5/6 w-full"
             title={`${name} · Liv. ${card.level}/${card.maxLevel}`}
         >
-            {badge && <div className="absolute top-0.5 right-0.5 z-10">{badge}</div>}
+            {/* in basso a destra, non in alto: l'ingrandimento di evoluzione/eroe
+          cresce verso l'alto (origin-bottom), quindi il bordo basso è
+          l'unico che resta fermo esattamente sull'angolo del contenitore. */}
+            {badge && <div className="absolute right-0.5 bottom-0.5 z-10">{badge}</div>}
             <CardImage
                 card={card}
                 variant={variant}
