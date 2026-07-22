@@ -122,23 +122,6 @@ function DeckPanel({ player }) {
     const evoCount = Object.values(roles).filter((r) => r === "evo").length;
     const heroMarkedCount = Object.values(roles).filter((r) => r === "hero").length;
 
-    // quante carte ancora senza ruolo possono davvero prendere un badge "+": al
-    // più quanti slot evoluzione/eroe restano liberi, non "tutte quelle idonee"
-    // — in tutto esistono solo 3 slot speciali per mazzo.
-    let evoSlotsLeft = Math.max(0, caps.evo - evoCount);
-    let heroSlotsLeft = Math.max(0, caps.hero - heroMarkedCount);
-    const placeholderIds = new Set();
-    for (const card of deck) {
-        if (rarityKey(card.rarity) === "champion" || roles[card.id]) continue;
-        if (card.evolutionLevel && evoSlotsLeft > 0) {
-            placeholderIds.add(card.id);
-            evoSlotsLeft--;
-        } else if (card.iconUrls?.heroMedium && heroSlotsLeft > 0) {
-            placeholderIds.add(card.id);
-            heroSlotsLeft--;
-        }
-    }
-
     return (
         <div className="flex flex-col gap-5 lg:w-80 lg:shrink-0 lg:border-l lg:border-panel-2 lg:pl-6">
             <div className="flex items-center justify-between gap-3">
@@ -163,7 +146,17 @@ function DeckPanel({ player }) {
                 {deck.map((card) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
                     const role = isChampion ? "champion" : roles[card.id] || null;
-                    const showPlaceholder = !isChampion && !role && placeholderIds.has(card.id);
+                    // sempre visibile su ogni carta idonea non ancora segnata: prima
+                    // lo mostravo solo sulle prime N in ordine di mazzo finché
+                    // restava capienza, ma se una carta già segnata tornava a
+                    // "normale" liberando uno slot, quello slot poteva finire a
+                    // un'altra carta più in alto nell'ordine invece che a lei
+                    // stessa — il pulsante spariva senza modo di riprenderselo.
+                    // Il tetto vero resta comunque applicato dentro nextDeckRole:
+                    // toccare una carta quando gli slot sono già pieni altrove
+                    // semplicemente non cambia nulla, invece di sparire.
+                    const showPlaceholder =
+                        !isChampion && !role && (!!card.evolutionLevel || !!card.iconUrls?.heroMedium);
                     return (
                         <DeckCard
                             key={card.id ?? card.name}
