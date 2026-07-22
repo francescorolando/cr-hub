@@ -153,6 +153,7 @@ function DeckPanel({ player }) {
                             card={card}
                             role={role}
                             showPlaceholder={showPlaceholder}
+                            nextRole={isChampion ? null : nextDeckRole(card, role, index)}
                             onCycle={
                                 isChampion
                                     ? undefined
@@ -179,9 +180,15 @@ const ROLE_TONE = {
     evo: "border-elixir bg-elixir",
 };
 
-function DeckCard({ card, role, showPlaceholder, onCycle }) {
+// etichetta del PROSSIMO stato (quello che il tocco produrrà), non di quello
+// attuale — così il tooltip dice sempre "Cambia versione: X" con X = cosa
+// otterrai toccando, non una descrizione di dove sei già.
+const NEXT_ROLE_LABEL = { evo: "evoluzione", hero: "eroe", null: "normale" };
+
+function DeckCard({ card, role, showPlaceholder, nextRole, onCycle }) {
     const name = cardNameIt(card.name);
     const variant = role === "evo" ? "evo" : role === "hero" ? "hero" : "base";
+    const changeTooltip = `Cambia versione: ${NEXT_ROLE_LABEL[nextRole]}`;
 
     let badge = null;
     if (role === "champion") {
@@ -192,26 +199,14 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
             />
         );
     } else if (role === "hero") {
-        badge = (
-            <RoleBadge
-                tone={ROLE_TONE.hero}
-                tooltip="Segnato come Eroe in questo mazzo. Tocca per cambiare."
-                onClick={onCycle}
-            />
-        );
+        badge = <RoleBadge tone={ROLE_TONE.hero} tooltip={changeTooltip} onClick={onCycle} />;
     } else if (role === "evo") {
-        badge = (
-            <RoleBadge
-                tone={ROLE_TONE.evo}
-                tooltip={`Segnato come Evoluto (liv. ${card.evolutionLevel}). Tocca per cambiare.`}
-                onClick={onCycle}
-            />
-        );
+        badge = <RoleBadge tone={ROLE_TONE.evo} tooltip={changeTooltip} onClick={onCycle} />;
     } else if (showPlaceholder) {
         badge = (
             <RoleBadge
                 tone="border-dashed border-muted bg-royal-deep opacity-50 hover:opacity-100"
-                tooltip="Non ancora confermata: tocca se in questo mazzo è Evoluta o Eroe."
+                tooltip={changeTooltip}
                 onClick={onCycle}
             />
         );
