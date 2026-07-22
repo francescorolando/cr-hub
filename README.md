@@ -74,7 +74,6 @@ lib/
 
 ## Things worth knowing before you push
 
-- **`CardsTab.js` and `CompareTab.js` are currently unused** (no page imports them anymore) — leftover from an earlier navigation layout. Safe to delete, or keep if you plan to bring that functionality back.
 - **The proxy route is effectively open**: `/api/cr/[...path]` forwards *any* path to the upstream API using your server-side token. Anyone who finds your deployed URL can use it to query the official API through your token. Fine for personal/demo use; if you expect real traffic, consider adding rate limiting or restricting which paths can be forwarded.
 - **`.env.local` is already gitignored** — double-check `git status` before your first commit/push just in case.
 - Card/league/clan-badge art is fetched from `cdns3.royaleapi.com` and `cdn.jsdelivr.net` (a third-party CDN, not Supercell's own), with a fallback to official Supercell assets baked in — if either service ever changes its URL scheme, images fall back automatically rather than breaking.
