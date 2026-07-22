@@ -83,12 +83,17 @@ export default function UpgradeCardRow({ card, blocks }) {
 
                     {/* blocco 4: carte mancanti — a piena larghezza da mobile. Numero e
               gemme sono UN SOLO blocco di testo (whitespace-nowrap): non
-              possono più andare a capo indipendentemente l'uno dall'altro,
-              qualunque sia la larghezza disponibile. Da 1024px in su,
-              min-width invece di una larghezza fissa: resta uniforme nella
-              stragrande maggioranza dei casi ma cresce da sola se un numero
-              specifico ha bisogno di più spazio, invece di spezzare il testo. */}
-                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-3 lg:min-w-52 lg:items-end">
+              possono più andare a capo indipendentemente l'uno dall'altro.
+              Da 1024px in su, larghezza FISSA (non min-width: con min-width
+              un numero più lungo la faceva comunque crescere, e le barre
+              — fratelle nello stesso flex-row — tornavano diverse da riga a
+              riga). 256px = il massimo matematico possibile in tutto il
+              gioco: una comune da 0 a livello 16 (23.086 carte, il totale
+              più alto fra tutte le rarità) più il suo equivalente in gemme
+              (≈8.311) misura 216.75px di solo testo a questa dimensione;
+              con il padding del riquadro non serve mai più di così, in
+              nessuna carta reale — non solo in questo profilo. */}
+                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-3 lg:w-64 lg:items-end">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
                             Carte mancanti
                         </p>
