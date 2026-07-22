@@ -140,7 +140,7 @@ function DeckPanel({ player }) {
     }
 
     return (
-        <div className="flex flex-col gap-3 lg:w-80 lg:shrink-0 lg:border-l lg:border-panel-2 lg:pl-6">
+        <div className="flex flex-col gap-5 lg:w-80 lg:shrink-0 lg:border-l lg:border-panel-2 lg:pl-6">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     {tower && <CardImage card={tower} className="h-9 w-auto shrink-0" />}
@@ -159,7 +159,7 @@ function DeckPanel({ player }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-x-2 gap-y-4">
                 {deck.map((card) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
                     const role = isChampion ? "champion" : roles[card.id] || null;
@@ -204,7 +204,7 @@ function DeckPanel({ player }) {
 // bianca e uguale per dire solo "tocca per cambiare".
 const ROLE_TONE = {
     champion: "border-gold bg-gold/90",
-    hero: "border-gem bg-gem/90",
+    hero: "border-yellow-400 bg-yellow-400/90",
     evo: "border-elixir bg-elixir/90",
 };
 
@@ -246,18 +246,28 @@ function DeckCard({ card, role, showPlaceholder, onCycle }) {
         );
     }
 
+    // le immagini evoluzione/eroe sono sullo stesso canvas 150x180 di quelle
+    // normali, ma il pezzo con il diamante in alto occupa una fetta fissa di
+    // quel canvas (misurato: ~38px di crest su 180 totali, sia per evoluzioni
+    // che per eroi) — quindi la "carta vera" dentro risulta più piccola a
+    // parità di riquadro. Ingrandendo del ~12% (157/141, corpo-normale
+    // diviso corpo-evoluto misurati a mano) e ancorando in basso, il corpo
+    // torna alla stessa dimensione delle carte normali e il pezzo in più
+    // sporge sopra il riquadro invece di rimpicciolire tutto.
+    const oversized = variant === "evo" || variant === "hero";
+
     return (
         <div
             className="relative aspect-5/6 w-full"
             title={`${name} · Liv. ${card.level}/${card.maxLevel}`}
         >
-            {/* aspect-5/6 fisso (il rapporto 150:180 delle carte RoyaleAPI): se
-          per una carta specifica l'asset non si trova e si ricade
-          sull'icona ufficiale Supercell (285:420, più stretta e alta),
-          senza un contenitore a rapporto fisso quella carta risulterebbe
-          visibilmente più grande delle altre nello stesso mazzo. */}
             {badge && <div className="absolute top-0.5 right-0.5 z-10">{badge}</div>}
-            <CardImage card={card} variant={variant} alt={name} className="h-full w-full object-contain" />
+            <CardImage
+                card={card}
+                variant={variant}
+                alt={name}
+                className={`h-full w-full object-contain ${oversized ? "origin-bottom scale-[1.12]" : ""}`}
+            />
         </div>
     );
 }
@@ -284,7 +294,7 @@ function RoleBadge({ tone, tooltip, onClick }) {
                     interactive ? "cursor-pointer" : ""
                 }`}
             >
-                <SwapIcon className="h-2.5 w-2.5" />
+                <SwapIcon className="h-3 w-3 text-white" strokeWidth={2.6} />
             </span>
         </Tooltip>
     );
