@@ -9,9 +9,32 @@ import "@fontsource/jetbrains-mono/700.css";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
+const DESCRIPTION = "Profilo, progressione e miglioramento delle carte in tempo reale.";
+
+// VERCEL_URL è impostata automaticamente da Vercel ad ogni deploy (senza bisogno
+// di configurarla a mano): senza una base assoluta, l'immagine di anteprima per
+// Open Graph/Twitter risulterebbe ancora "localhost" una volta online.
+const SITE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+
 export const metadata = {
+    metadataBase: new URL(SITE_URL),
     title: "Royale Hub",
-    description: "Profilo, progressione e miglioramento delle carte in tempo reale.",
+    description: DESCRIPTION,
+    openGraph: {
+        title: "Royale Hub",
+        description: DESCRIPTION,
+        images: ["/og-image.png"],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Royale Hub",
+        description: DESCRIPTION,
+        images: ["/og-image.png"],
+    },
+};
+
+export const viewport = {
+    themeColor: "#18181b",
 };
 
 // applica il tema salvato PRIMA che React idrati la pagina: altrimenti si
