@@ -122,6 +122,28 @@ function DeckPanel({ player }) {
     const evoCount = Object.values(roles).filter((r) => r === "evo").length;
     const heroMarkedCount = Object.values(roles).filter((r) => r === "hero").length;
 
+    // quante carte MAI toccate possono ancora mostrare il pulsante "+": al
+    // più quanti slot restano liberi, non "tutte quelle idonee" — altrimenti
+    // un mazzo con più di 3 carte idonee ne mostrerebbe uno su una quarta,
+    // quinta ecc. anche se in totale esistono solo 3 slot speciali. Una
+    // carta già toccata (presente in "roles", anche a null) mantiene invece
+    // sempre il pulsante: altrimenti rimetterla a "normale" per liberare
+    // uno slot poteva far sparire il SUO pulsante a favore di un'altra carta
+    // più in alto nell'ordine del mazzo.
+    let evoSlotsLeft = Math.max(0, caps.evo - evoCount);
+    let heroSlotsLeft = Math.max(0, caps.hero - heroMarkedCount);
+    const untouchedPlaceholderIds = new Set();
+    for (const card of deck) {
+        if (rarityKey(card.rarity) === "champion" || card.id in roles) continue;
+        if (card.evolutionLevel && evoSlotsLeft > 0) {
+            untouchedPlaceholderIds.add(card.id);
+            evoSlotsLeft--;
+        } else if (card.iconUrls?.heroMedium && heroSlotsLeft > 0) {
+            untouchedPlaceholderIds.add(card.id);
+            heroSlotsLeft--;
+        }
+    }
+
     return (
         <div className="flex flex-col gap-5 lg:w-80 lg:shrink-0 lg:border-l lg:border-panel-2 lg:pl-6">
             <div className="flex items-center justify-between gap-3">
@@ -146,17 +168,13 @@ function DeckPanel({ player }) {
                 {deck.map((card) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
                     const role = isChampion ? "champion" : roles[card.id] || null;
-                    // sempre visibile su ogni carta idonea non ancora segnata: prima
-                    // lo mostravo solo sulle prime N in ordine di mazzo finché
-                    // restava capienza, ma se una carta già segnata tornava a
-                    // "normale" liberando uno slot, quello slot poteva finire a
-                    // un'altra carta più in alto nell'ordine invece che a lei
-                    // stessa — il pulsante spariva senza modo di riprenderselo.
-                    // Il tetto vero resta comunque applicato dentro nextDeckRole:
-                    // toccare una carta quando gli slot sono già pieni altrove
-                    // semplicemente non cambia nulla, invece di sparire.
+                    const touched = card.id in roles;
+                    const eligible = !!card.evolutionLevel || !!card.iconUrls?.heroMedium;
                     const showPlaceholder =
-                        !isChampion && !role && (!!card.evolutionLevel || !!card.iconUrls?.heroMedium);
+                        !isChampion &&
+                        !role &&
+                        eligible &&
+                        (touched || untouchedPlaceholderIds.has(card.id));
                     return (
                         <DeckCard
                             key={card.id ?? card.name}
