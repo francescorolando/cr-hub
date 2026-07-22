@@ -14,7 +14,7 @@ import {
     useDeckRoles,
     deckKeyFor,
     nextDeckRole,
-    getSlotCaps,
+    availableRoleOptions,
     computeDefaultRoles,
 } from "@/lib/useDeckRoles";
 
@@ -105,9 +105,6 @@ function DeckPanel({ player }) {
     const deckKey = deckKeyFor(player, deck);
     const { roles, setRole, seed, initialized } = useDeckRoles(deckKey);
 
-    const championCount = deck.filter((c) => rarityKey(c.rarity) === "champion").length;
-    const caps = getSlotCaps(championCount);
-
     useEffect(() => {
         if (deck.length === 0 || initialized) return;
         seed(computeDefaultRoles(deck));
@@ -119,30 +116,6 @@ function DeckPanel({ player }) {
     const avgElixir = (deck.reduce((sum, c) => sum + (c.elixirCost ?? 0), 0) / deck.length).toFixed(
         1,
     );
-    const evoCount = Object.values(roles).filter((r) => r === "evo").length;
-    const heroMarkedCount = Object.values(roles).filter((r) => r === "hero").length;
-
-    // quante carte MAI toccate possono ancora mostrare il pulsante "+": al
-    // più quanti slot restano liberi, non "tutte quelle idonee" — altrimenti
-    // un mazzo con più di 3 carte idonee ne mostrerebbe uno su una quarta,
-    // quinta ecc. anche se in totale esistono solo 3 slot speciali. Una
-    // carta già toccata (presente in "roles", anche a null) mantiene invece
-    // sempre il pulsante: altrimenti rimetterla a "normale" per liberare
-    // uno slot poteva far sparire il SUO pulsante a favore di un'altra carta
-    // più in alto nell'ordine del mazzo.
-    let evoSlotsLeft = Math.max(0, caps.evo - evoCount);
-    let heroSlotsLeft = Math.max(0, caps.hero - heroMarkedCount);
-    const untouchedPlaceholderIds = new Set();
-    for (const card of deck) {
-        if (rarityKey(card.rarity) === "champion" || card.id in roles) continue;
-        if (card.evolutionLevel && evoSlotsLeft > 0) {
-            untouchedPlaceholderIds.add(card.id);
-            evoSlotsLeft--;
-        } else if (card.iconUrls?.heroMedium && heroSlotsLeft > 0) {
-            untouchedPlaceholderIds.add(card.id);
-            heroSlotsLeft--;
-        }
-    }
 
     return (
         <div className="flex flex-col gap-5 lg:w-80 lg:shrink-0 lg:border-l lg:border-panel-2 lg:pl-6">
@@ -164,17 +137,16 @@ function DeckPanel({ player }) {
                 </div>
             </div>
 
+            {/* regole fisse per POSIZIONE (indice 0-based), non conteggi
+          aggregati sul mazzo: 1ª carta solo normale/evoluzione, 2ª solo
+          normale/eroe, 3ª normale/eroe/evoluzione, dalla 4ª in poi mai
+          nessun pulsante — a prescindere da cosa sblocca il giocatore. */}
             <div className="grid grid-cols-4 gap-x-2 gap-y-4">
-                {deck.map((card) => {
+                {deck.map((card, index) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
                     const role = isChampion ? "champion" : roles[card.id] || null;
-                    const touched = card.id in roles;
-                    const eligible = !!card.evolutionLevel || !!card.iconUrls?.heroMedium;
                     const showPlaceholder =
-                        !isChampion &&
-                        !role &&
-                        eligible &&
-                        (touched || untouchedPlaceholderIds.has(card.id));
+                        !isChampion && !role && availableRoleOptions(card, index).length > 0;
                     return (
                         <DeckCard
                             key={card.id ?? card.name}
@@ -186,19 +158,7 @@ function DeckPanel({ player }) {
                                     ? undefined
                                     : () => {
                                           const current = roles[card.id] || null;
-                                          const othersEvo = evoCount - (current === "evo" ? 1 : 0);
-                                          const othersHero =
-                                              heroMarkedCount - (current === "hero" ? 1 : 0);
-                                          setRole(
-                                              card.id,
-                                              nextDeckRole(
-                                                  card,
-                                                  current,
-                                                  caps,
-                                                  othersEvo,
-                                                  othersHero,
-                                              ),
-                                          );
+                                          setRole(card.id, nextDeckRole(card, current, index));
                                       }
                             }
                         />
