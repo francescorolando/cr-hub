@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* tema chiaro di default: neutro e pulito (grigio quasi bianco, testo quasi
+   nero, un solo accento acceso) invece della stessa palette scura invertita.
+   il tema scuro resta invece "atmosferico" (blu notte + oro) perché lì
+   funziona ed è rimasto invariato. */
+:root {
+  --color-royal: #eceef1;
+  --color-royal-deep: #18181b;
+  --color-panel: #ffffff;
+  --color-panel-2: #e1e4e9;
+  --color-gold: #b45309;
+  --color-gem: #059669;
+  --color-brand: #18181b;
+  --color-elixir: #7c3aed;
+  --color-crimson: #dc2626;
+  --color-ink: #18181b;
+  --color-muted: #52525b;
+
+  --color-common: #64748b;
+  --color-rare: #ea580c;
+  --color-epic: #9333ea;
+  --color-legendary: #0284c7;
+  --color-champion: #ca8a04;
+
+  --shadow-panel: 0 1px 3px rgba(24, 24, 27, 0.08), 0 10px 24px rgba(24, 24, 27, 0.10);
+  --shadow-tile: none;
+}
+
+/* tema scuro, attivato mettendo data-theme="dark" su <html> */
+:root[data-theme="dark"] {
+  --color-royal: #150f2e;
+  --color-royal-deep: #0d0920;
+  --color-panel: #201a3d;
+  --color-panel-2: #2a2350;
+  --color-gold: #e8b23d;
+  --color-gem: #34d399;
+  --color-brand: #e8b23d;
+  --color-elixir: #b565f0;
+  --color-crimson: #e0475c;
+  --color-ink: #f1ecff;
+  --color-muted: #9184b8;
+
+  --color-common: #b9c2cc;
+  --color-rare: #ff9a3c;
+  --color-epic: #c07bf5;
+  --color-legendary: #4fd1ff;
+  --color-champion: #f2c14e;
+
+  --shadow-panel: none;
+  --shadow-tile: none;
+}
+
+@theme inline {
+  --color-royal: var(--color-royal);
+  --color-royal-deep: var(--color-royal-deep);
+  --color-panel: var(--color-panel);
+  --color-panel-2: var(--color-panel-2);
+  --color-gold: var(--color-gold);
+  --color-gem: var(--color-gem);
+  --color-brand: var(--color-brand);
+  --color-elixir: var(--color-elixir);
+  --color-crimson: var(--color-crimson);
+  --color-ink: var(--color-ink);
+  --color-muted: var(--color-muted);
+
+  --color-common: var(--color-common);
+  --color-rare: var(--color-rare);
+  --color-epic: var(--color-epic);
+  --color-legendary: var(--color-legendary);
+  --color-champion: var(--color-champion);
+
+  --font-display: "Cinzel", serif;
+  --font-body: "Inter", sans-serif;
+  --font-num: "JetBrains Mono", monospace;
+}
+
+/* i tooltip (vedi components/Tooltip.js) sono posizionati assoluti e su
+   schermi stretti possono sporgere di qualche pixel oltre il bordo, anche da
+   invisibili: senza questo, quel piccolo overflow rende l'intera pagina
+   scorrevole in orizzontale su mobile (si vede/sente uno "spostamento"
+   toccando a destra dello schermo). */
+html {
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--color-royal);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(181, 101, 240, 0.16), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(232, 178, 61, 0.10), transparent 40%),
+    var(--color-royal);
+}
+
+/* silhouette a "carta da gioco": riservata alle carte di Clash Royale vere e
+   proprie (CardTile), non ai pannelli generici dell'interfaccia. */
+.card-shape {
+  border-radius: 18px 18px 6px 6px;
+}
+
+/* alone sfocato dietro le carte evoluzione/campione nel mazzo, stile
+   "glow" delle card evolute mostrate nel gioco e su RoyaleAPI. */
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 22px 22px 10px 10px;
+  background: var(--glow-color, var(--color-gold));
+  filter: blur(10px);
+  opacity: 0.55;
+  z-index: -1;
+}
+
+.surface {
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-panel);
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-panel);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-panel-2);
+  border-radius: 999px;
+}
