@@ -90,14 +90,14 @@ export default function UpgradeCardRow({ card, blocks }) {
               riga). 256px = il massimo matematico possibile in tutto il
               gioco: una comune da 0 a livello 16 (23.086 carte, il totale
               più alto fra tutte le rarità) più il suo equivalente in gemme
-              (≈8.311) misura 216.75px di solo testo a questa dimensione;
-              con il padding del riquadro non serve mai più di così, in
-              nessuna carta reale — non solo in questo profilo. */}
-                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-3 lg:w-64 lg:items-end">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              (≈8.311) resta ben sotto i 256px anche col padding del
+              riquadro, in nessuna carta reale — non solo in questo
+              profilo. */}
+                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-2 lg:w-64 lg:items-end">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
                             Carte mancanti
                         </p>
-                        <p className="whitespace-nowrap font-num text-base font-bold text-ink lg:text-lg">
+                        <p className="whitespace-nowrap font-num text-sm font-bold text-ink">
                             {formatNumber(card.cardsNeeded)}{" "}
                             <span className="font-semibold text-gem">
                                 ≈ {formatNumber(card.gemsNeeded)} gemme

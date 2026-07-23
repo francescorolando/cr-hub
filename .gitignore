@@ -39,6 +39,9 @@ yarn-error.log*
 # local editor/tooling config
 .claude/
 
+# note personali, non da versionare
+TODO.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
