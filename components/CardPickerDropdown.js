@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityStyle } from "@/lib/rarity";
 import { cardNameIt } from "@/lib/cardNamesIt";
+import { CARD_STATS } from "@/lib/cardStats";
+import Tooltip from "@/components/Tooltip";
+
+// stesso motivo per cui restano in elenco ma disattivate (vedi CompareTab):
+// copiano le statistiche di un'altra carta, non ne hanno di proprie da
+// mostrare in tabella.
+const UNCOMPARABLE_NOTE = {
+  Mirror: "Rievoca l'ultima carta giocata (+1 livello): non ha statistiche proprie da confrontare.",
+  Clone: "Clona le truppe alleate copiandone le statistiche: non ha valori propri da confrontare.",
+};
 
 // select nativo a scelta unica su un elenco di ~120 carte: i browser non
 // permettono di colorare in modo affidabile i titoli <optgroup> (Chrome in
@@ -77,19 +87,39 @@ export default function CardPickerDropdown({ groupedCatalog, value, cardMeta, on
                 <p className={`px-2 py-1 text-xs font-bold uppercase tracking-wide ${rStyle.text}`}>
                   {RARITY_LABELS[r]}
                 </p>
-                {cards.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => pick(c.id)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition hover:bg-panel-2 ${
-                      c.id === value ? "text-gold" : "text-ink"
-                    }`}
-                  >
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${rStyle.dot}`} />
-                    <span className="truncate">{cardNameIt(c.name)}</span>
-                  </button>
-                ))}
+                {cards.map((c) => {
+                  const disabled = !CARD_STATS[c.id];
+                  const button = (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={disabled ? undefined : () => pick(c.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                        disabled
+                          ? "cursor-not-allowed text-muted opacity-50"
+                          : `hover:bg-panel-2 ${c.id === value ? "text-gold" : "text-ink"}`
+                      }`}
+                    >
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${rStyle.dot}`} />
+                      <span className="truncate">{cardNameIt(c.name)}</span>
+                    </button>
+                  );
+                  const note = disabled ? UNCOMPARABLE_NOTE[c.name] : null;
+                  return (
+                    <div key={c.id}>
+                      {note ? (
+                        <Tooltip
+                          className="w-full"
+                          content={<p className="max-w-52 text-xs text-white/80">{note}</p>}
+                        >
+                          {button}
+                        </Tooltip>
+                      ) : (
+                        button
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

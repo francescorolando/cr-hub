@@ -15,6 +15,13 @@ const TOURNAMENT_LEVEL = 11;
 const MIN_SLOTS = 2;
 const MAX_SLOTS = 6;
 
+// Specchio e Clonazione non hanno statistiche proprie (copiano quelle di
+// un'altra carta), quindi normalmente sparirebbero insieme a ogni altra
+// carta senza dati in CARD_STATS. Le teniamo comunque nell'elenco — un
+// utente che le cerca deve vederle, non pensare che manchino per errore —
+// ma disattivate (vedi CardPickerDropdown), con una nota sul perché.
+const UNCOMPARABLE_NAMES = new Set(["Mirror", "Clone"]);
+
 // righe raggruppate per sezione, invece di un'unica lista piatta: la stessa
 // tabella con 13 righe senza struttura era difficile da scorrere. "Danno" e
 // "Danno alla torre" restano due righe separate con due icone diverse (spada
@@ -77,7 +84,7 @@ export default function CompareTab() {
 
   useEffect(() => {
     fetchCardCatalog()
-      .then((items) => setCatalog(items.filter((c) => CARD_STATS[c.id])))
+      .then((items) => setCatalog(items.filter((c) => CARD_STATS[c.id] || UNCOMPARABLE_NAMES.has(c.name))))
       .catch((err) => setError(err.message || "Impossibile caricare il catalogo carte."));
   }, []);
 

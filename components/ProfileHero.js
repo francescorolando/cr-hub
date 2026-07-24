@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ShieldIcon, SwapIcon } from "@/components/icons";
 import Tooltip from "@/components/Tooltip";
 import CardImage from "@/components/CardImage";
-import { leagueName, bestSeasonResult } from "@/lib/leagues";
+import { leagueName, CHAMPION_DEFINITIVE_LEAGUE } from "@/lib/leagues";
 import { leagueIconUrl, TROPHY_ICON_URL } from "@/lib/royaleApiAssets";
 import { generalBadges, badgeIconUrl, humanizeBadgeName } from "@/lib/badges";
 import { clanBadgeUrl } from "@/lib/clanBadges";
@@ -20,7 +20,13 @@ import {
 } from "@/lib/useDeckRoles";
 
 export default function ProfileHero({ player }) {
-    const ranked = bestSeasonResult(player);
+    // la lega ATTUALE (non l'ultima stagione completata, né il record
+    // migliore): è quella che il giocatore vede in gioco in questo momento.
+    // Sotto Campione Definitivo si sale a "step" per vittoria, non con
+    // medaglie che contano per una classifica mondiale — infatti l'API dà
+    // "rank" solo lì — quindi il numero si mostra solo a quel livello, per
+    // non far sembrare un progresso-a-step un punteggio di classifica.
+    const currentLeague = player?.currentPathOfLegendSeasonResult;
     const clanBadge = player.clan?.badgeId ? clanBadgeUrl(player.clan.badgeId) : null;
 
     return (
@@ -33,7 +39,7 @@ export default function ProfileHero({ player }) {
           resta sotto (piena larghezza, niente strozzatura) fino a quando non
           c'è davvero spazio per stare affiancato senza spingere la riga badge
           a capo. */}
-            <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-8 p-4 sm:gap-10 sm:p-6 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
                 <div className="flex min-w-0 flex-1 flex-col gap-4 sm:gap-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -41,16 +47,16 @@ export default function ProfileHero({ player }) {
                             <p className="font-num text-sm text-muted">{player.tag}</p>
                         </div>
                         {player.clan?.name && (
-                            <div className="flex items-center gap-2 rounded-full border border-panel-2 bg-panel-2 px-3 py-1.5 text-sm text-ink">
+                            <div className="flex items-center gap-2 rounded-full border border-panel-2 bg-panel-2 px-3.5 py-2 text-base text-ink">
                                 {clanBadge ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         src={clanBadge}
                                         alt=""
-                                        className="h-4 w-4 object-contain"
+                                        className="h-5 w-5 object-contain"
                                     />
                                 ) : (
-                                    <ShieldIcon className="h-4 w-4 text-muted" />
+                                    <ShieldIcon className="h-5 w-5 text-muted" />
                                 )}
                                 <span className="font-medium">{player.clan.name}</span>
                             </div>
@@ -70,11 +76,16 @@ export default function ProfileHero({ player }) {
                             value={formatNumber(player.bestTrophies)}
                             className="border border-panel-2"
                         />
-                        {ranked && (
+                        {currentLeague?.leagueNumber && (
                             <Chip
-                                iconUrl={leagueIconUrl(ranked.leagueNumber)}
-                                label={leagueName(ranked.leagueNumber)}
-                                value={`${formatNumber(ranked.trophies)}${ranked.rank ? ` · #${formatNumber(ranked.rank)}` : ""}`}
+                                iconUrl={leagueIconUrl(currentLeague.leagueNumber)}
+                                iconSize="h-9 w-9"
+                                label="Classificata"
+                                value={
+                                    currentLeague.leagueNumber === CHAMPION_DEFINITIVE_LEAGUE
+                                        ? `${leagueName(currentLeague.leagueNumber)} · ${formatNumber(currentLeague.trophies)}${currentLeague.rank ? ` #${formatNumber(currentLeague.rank)}` : ""}`
+                                        : leagueName(currentLeague.leagueNumber)
+                                }
                             />
                         )}
                     </div>
@@ -88,24 +99,38 @@ export default function ProfileHero({ player }) {
     );
 }
 
-function Chip({ iconUrl, iconClassName = "", label, value, className = "" }) {
+// da 2 a 3 chip (Trofei e Record personale sempre, lega attuale solo se il
+// giocatore ha una stagione Classificata in corso — vedi currentLeague più
+// sopra). Sotto sm ne sta comunque una sola per riga (il pannello non è mai
+// abbastanza largo per due), quindi lì è piena larghezza (w-full); da sm in
+// su diventa a larghezza FISSA — non un min/max che le lascia libere di
+// allargarsi quando ne condividono la riga solo in 2 (sembravano vuote) — e
+// abbastanza larga da non far andare a capo "Record personale".
+// lo slot dell'icona è a larghezza FISSA (indipendente da iconSize): senza
+// questo, un'icona più grande su una sola card spingeva la sua scritta più a
+// destra delle altre due, disallineando le etichette fra loro. items-center
+// dentro lo slot la tiene centrata (sia in verticale che in orizzontale)
+// qualunque sia la sua dimensione reale.
+function Chip({ iconUrl, iconSize = "h-7 w-7", iconClassName = "", label, value, className = "" }) {
     return (
         <div
-            className={`flex min-w-48 items-center gap-3 rounded-lg bg-panel-2 px-4 py-2.5 ${className}`}
+            className={`flex w-full min-w-48 items-center gap-3 rounded-lg bg-panel-2 px-4 py-2.5 sm:w-56 sm:flex-none ${className}`}
         >
             {iconUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                    src={iconUrl}
-                    alt=""
-                    className={`h-7 w-7 shrink-0 object-contain ${iconClassName}`}
-                />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={iconUrl}
+                        alt=""
+                        className={`${iconSize} object-contain ${iconClassName}`}
+                    />
+                </div>
             )}
             <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
                     {label}
                 </p>
-                <p className="font-num text-base font-bold text-ink">{value}</p>
+                {value != null && <p className="font-num text-base font-bold text-ink">{value}</p>}
             </div>
         </div>
     );
@@ -354,7 +379,13 @@ function DeckPanel({ player }) {
     );
 
     return (
-        <div className="flex flex-col gap-5 xl:w-80 xl:shrink-0 xl:border-l xl:border-panel-2 xl:pl-6">
+        // sotto xl il mazzo va a piena larghezza (vedi il commento sopra sullo
+        // split xl), ma su schermi medi quella larghezza intera con 4 colonne
+        // fisse rendeva le carte gigantesche (e i pulsanti cambio-versione,
+        // dimensione fissa, sembravano persi sopra carte enormi). Un tetto di
+        // larghezza, centrato, le tiene alla dimensione pensata per la sidebar
+        // anche quando il mazzo non è più dentro una sidebar.
+        <div className="mx-auto flex w-full max-w-sm flex-col gap-5 xl:mx-0 xl:w-80 xl:max-w-none xl:shrink-0 xl:border-l xl:border-panel-2 xl:pl-6">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     {tower && <CardImage card={tower} className="h-9 w-auto shrink-0" />}
