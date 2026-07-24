@@ -76,7 +76,7 @@ export default function Tooltip({ children, content, className = "" }) {
               bottom: pos.bottom,
               translate: `calc(-50% + ${shift}px) 0`,
             }}
-            className={`pointer-events-none z-50 block w-max max-w-[240px] scale-95 rounded-lg border border-white/10 bg-royal-deep px-3 py-2 opacity-0 shadow-soft transition-all duration-100 ${
+            className={`pointer-events-none z-50 block w-max max-w-[240px] scale-95 rounded-lg border border-white/10 bg-royal-deep px-3 py-2 opacity-0 shadow-soft transition-[opacity,transform] duration-100 ${
               open ? "scale-100 opacity-100" : ""
             }`}
           >

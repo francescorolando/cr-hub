@@ -320,7 +320,7 @@ function BadgeModal({ badges, onClose }) {
                     pre-selezionato all'apertura. Grid auto-fill/minmax invece di
                     flex-wrap: le colonne si stirano (1fr) a riempire tutta la
                     riga invece di lasciare margine vuoto a destra. */}
-                <div className="scrollbar-thin grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(56px,1fr))] content-start gap-2 overflow-y-auto pt-12 sm:hidden">
+                <div className="scrollbar-thin grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(56px,1fr))] content-start gap-2 overflow-y-auto sm:hidden">
                     {badges.map((badge) => (
                         <Tooltip key={badge.name} content={<BadgeTooltipContent badge={badge} />}>
                             <BadgeGlyph badge={badge} boxSize="h-14 w-14" imgSize="h-[67px] w-[67px]" fallbackSize="h-11 w-11" />
