@@ -139,10 +139,27 @@ function Chip({ iconUrl, iconSize = "h-7 w-7", iconClassName = "", label, value,
 // l'icona ufficiale del badge "anni di gioco" è rotta lato Supercell per
 // certi livelli (hash 404 su ogni risoluzione, uguale per tutti i
 // giocatori: non è un problema del nostro fetch, non è recuperabile da
-// nessuna API). Niente tentativi di imitare l'illustrazione 3D del gioco
-// (esagono/ali/nastro): un semplice medaglione coerente con lo stile
-// dell'app, con il vero livello del giocatore al centro.
+// nessuna API). Per i livelli 1-10 usiamo asset locali (illustrazioni
+// generate ad hoc nello stesso stile esagono/ali/nastro dell'originale,
+// sorgenti in public/badges/source/); oltre il 10 (o se anche l'asset
+// locale dovesse mancare) si ricade sul medaglione SVG semplice.
 function YearsPlayedGlyph({ badge, className }) {
+    const [broken, setBroken] = useState(false);
+    const level = badge.level;
+    const hasLocalArt = level >= 1 && level <= 10;
+
+    if (hasLocalArt && !broken) {
+        return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+                src={`/badges/years-played-${level}.png`}
+                alt=""
+                onError={() => setBroken(true)}
+                className={`${className} object-contain`}
+            />
+        );
+    }
+
     return (
         <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
             <defs>
@@ -161,7 +178,7 @@ function YearsPlayedGlyph({ badge, className }) {
                 fill="#fff"
                 fontFamily="var(--font-body)"
             >
-                {badge.level ?? "?"}
+                {level ?? "?"}
             </text>
         </svg>
     );
