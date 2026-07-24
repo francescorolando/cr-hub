@@ -70,8 +70,8 @@ export default function ProfileHero({ player }) {
                             value={formatNumber(player.trophies)}
                         />
                         <Chip
-                            iconUrl={TROPHY_ICON_URL}
-                            iconClassName="grayscale brightness-125 contrast-75"
+                            iconUrl="/badge.png"
+                            iconSize="h-8 w-8"
                             label="Record personale"
                             value={formatNumber(player.bestTrophies)}
                             className="border border-panel-2"
