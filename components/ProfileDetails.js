@@ -49,16 +49,29 @@ export default function ProfileDetails() {
 // stessa struttura per tutte le card statistiche (icona+titolo, icona grande +
 // numero grande + eventuale valore secondario, righe extra opzionali): prima
 // ognuna aveva spaziature e proporzioni sue, ora condividono lo stesso schema.
-function StatCard({ iconUrl, FallbackIcon, title, big, bigLabel, bigClassName, side, sideLabel, sideClassName, children }) {
+function StatCard({
+  iconUrl,
+  iconSize = "h-14 w-14",
+  iconClassName = "",
+  FallbackIcon,
+  title,
+  big,
+  bigLabel,
+  bigClassName,
+  side,
+  sideLabel,
+  sideClassName,
+  children,
+}) {
   return (
     <div className="surface flex flex-col gap-4 rounded-xl border border-panel-2 bg-panel p-5">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted">{title}</p>
       <div className="flex items-center gap-4">
         {iconUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={iconUrl} alt="" className="h-14 w-14 shrink-0 object-contain" />
+          <img src={iconUrl} alt="" className={`${iconSize} shrink-0 object-contain ${iconClassName}`} />
         ) : (
-          FallbackIcon && <FallbackIcon className="h-14 w-14 shrink-0 text-legendary" />
+          FallbackIcon && <FallbackIcon className={`${iconSize} shrink-0 text-legendary ${iconClassName}`} />
         )}
         <div className="min-w-0 flex-1">
           <p className={bigClassName || "font-num text-2xl font-bold text-ink sm:text-3xl"}>{big}</p>
@@ -84,6 +97,8 @@ function ProgressionCard({ player }) {
   return (
     <StatCard
       iconUrl={icon}
+      iconSize="h-[88px] w-[88px]"
+      iconClassName="-mt-1.5"
       title="Progressione"
       big={collectionLevel != null ? formatNumber(collectionLevel) : "–"}
       bigLabel="Livello collezione"
@@ -103,7 +118,7 @@ function BattlesCard({ player }) {
       bigLabel="Battaglie totali"
       side={winRate != null ? `${winRate}%` : null}
       sideLabel="Vittorie"
-      sideClassName="font-num text-xl font-bold text-gold"
+      sideClassName="font-num text-2xl font-bold text-gold sm:text-3xl"
     >
       <div className="flex gap-4 text-sm">
         <p className="text-muted">
