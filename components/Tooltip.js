@@ -21,7 +21,13 @@ export default function Tooltip({ children, content, className = "" }) {
   const [shift, setShift] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  // il portal richiede document.body, che non esiste nel primo render
+  // server: va montato solo dopo l'hydration sul client (stesso pattern già
+  // usato in ThemeToggle/useDeckRoles per lo stesso motivo).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   function show() {
     const wrap = wrapRef.current;
