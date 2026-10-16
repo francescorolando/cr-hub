@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import UpgradeCardRow from "./UpgradeCardRow";
+import WildCardsPanel from "./WildCardsPanel";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityKey, rarityStyle } from "@/lib/rarity";
 import { remainingToMax, levelWindowBlocks, formatNumber } from "@/lib/cardLeveling";
@@ -25,7 +26,7 @@ export default function UpgradeTab() {
     const [query, setQuery] = useState("");
     const [rarityFilter, setRarityFilter] = useState("tutte");
     const [onlyNotMaxed, setOnlyNotMaxed] = useState(false);
-    const [sortKey, setSortKey] = useState("nome");
+    const [sortKey, setSortKey] = useState("carte_asc");
 
     const rows = useMemo(() => {
         return (player?.cards || []).map((c) => {
@@ -128,6 +129,8 @@ export default function UpgradeTab() {
                     className="col-span-2 sm:col-span-1"
                 />
             </div>
+
+            <WildCardsPanel player={player} />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <input
