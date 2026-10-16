@@ -335,6 +335,57 @@ const CONFIRMED_MANUAL_OVERRIDES = {
   26000042: { hp1: 279 },
 };
 
+// Bilanciamento ufficiale del 2026-10-06 (post Supercell "October Balance
+// Changes"), uscito quando statsroyale era fermo al 2026-10-05. I valori
+// "prima" del post combaciano tutti esattamente coi nostri, quindi i "dopo"
+// sono affidabili. Ogni voce si applica SOLO se il campo vale ancora
+// "from" (fonte non ancora aggiornata); se vale già "to" la fonte ha
+// recepito la patch e la voce non serve più; qualunque altro valore viene
+// segnalato nel log e non toccato (fonte cambiata in un modo non previsto).
+// hp1/dmg1 sono valori base: il valore al livello 11 del post diviso 2.56
+// (moltiplicatore liv. 11), cioè l'unico intero x con floor(x*256/100) =
+// valore ufficiale. Una volta che statsroyale si aggiorna, si può
+// cancellare l'intero blocco.
+//
+// Non rappresentabili nel nostro modello, quindi non applicati: abilità di
+// Hero Ice Wizard e Monk, evoluzioni (Cannone, Elite Barbarians), dispersione
+// degli Skeletons, scatto del Golden Knight, produzione dell'Elixir
+// Collector, danno alla torre di Goblin Drill, primo colpo di Goblin Barrel
+// (la nostra voce non ha firstHitSpeed) e il danno del rotolamento di
+// Barbarian Barrel (232 → 215: noi mostriamo le stat del Barbaro evocato).
+const PATCH_2026_10_06 = {
+  26000107: { atkSpeed: { from: 1.5, to: 1.7 } }, // Minion Giant
+  26000050: { hp1: { from: 473, to: 450 }, dmg1: { from: 102, to: 103 } }, // Royal Ghost 1152 / 263
+  26000029: { dmg1: { from: 21, to: 28 }, atkSpeed: { from: 1.3, to: 1.5 } }, // Lava Hound 71
+  26000051: { dmg1: { from: 98, to: 106 } }, // Ram Rider 271
+  26000058: { dmg1: { from: 110, to: 118 } }, // Wall Breakers 302
+  27000008: { dmg1: { from: 23, to: 24 } }, // X-Bow 61
+  26000074: { dmg1: { from: 63, to: 66 } }, // Golden Knight 168
+  27000007: { lifetime: { from: 93, to: 110 } }, // Elixir Collector 1m 50s
+  26000028: { hp11: { from: 883, to: 906 } }, // Three Musketeers (fonte wiki)
+};
+
+function applyPendingPatch(results, patch) {
+  const applied = [];
+  const alreadyLive = [];
+  const unexpected = [];
+  for (const [id, fields] of Object.entries(patch)) {
+    const entry = results[id];
+    if (!entry) continue;
+    for (const [field, { from, to }] of Object.entries(fields)) {
+      if (entry[field] === from) {
+        entry[field] = to;
+        applied.push(`${entry.name}.${field}`);
+      } else if (entry[field] === to) {
+        alreadyLive.push(`${entry.name}.${field}`);
+      } else {
+        unexpected.push(`${entry.name}.${field}=${entry[field]} (attesi ${from} o ${to})`);
+      }
+    }
+  }
+  return { applied, alreadyLive, unexpected };
+}
+
 async function main() {
   const catalog = await fetchCatalog();
   const gameData = await fetchGameData();
@@ -381,6 +432,8 @@ async function main() {
     results[id] = stripUndefined({ ...results[id], ...override });
     overridden.push(results[id].name);
   }
+
+  const patch = applyPendingPatch(results, PATCH_2026_10_06);
 
   const header = `// Statistiche di combattimento per carta — fonte MISTA (vedi
 // scripts/fetch-card-stats.mjs, eseguito il ${new Date().toISOString().slice(0, 10)}):
@@ -478,6 +531,12 @@ export function getCardStatsAtLevel(cardMeta, absoluteLevel) {
   console.log(`Rimaste su fonte wiki (legacy): ${keptLegacy.length}`);
   if (keptLegacy.length) console.log(`  ${keptLegacy.join(", ")}`);
   if (overridden.length) console.log(`Correzioni manuali applicate (verificate in gioco): ${overridden.join(", ")}`);
+  if (patch.applied.length) console.log(`Patch 2026-10-06 applicata a mano (fonte non ancora aggiornata): ${patch.applied.join(", ")}`);
+  if (patch.alreadyLive.length) console.log(`Patch 2026-10-06 già presente nella fonte: ${patch.alreadyLive.join(", ")}`);
+  if (patch.unexpected.length) {
+    console.log(`ATTENZIONE, patch 2026-10-06 non applicata, valore inatteso:`);
+    for (const line of patch.unexpected) console.log(`  - ${line}`);
+  }
   if (missing.length) {
     console.log(`Mancanti del tutto (${missing.length}):`);
     for (const name of missing) console.log(`  - ${name}`);
