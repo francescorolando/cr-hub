@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import UpgradeCardRow from "./UpgradeCardRow";
+import WildCardsPanel from "./WildCardsPanel";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityKey, rarityStyle } from "@/lib/rarity";
 import { remainingToMax, levelWindowBlocks, formatNumber } from "@/lib/cardLeveling";
 import { cardNameIt } from "@/lib/cardNamesIt";
 import { usePlayer } from "@/lib/PlayerContext";
+import { useWildCards } from "@/lib/wildCards";
 
 const SORTS = {
     carte_desc: (a, b) => b.cardsNeeded - a.cardsNeeded,
@@ -25,7 +27,8 @@ export default function UpgradeTab() {
     const [query, setQuery] = useState("");
     const [rarityFilter, setRarityFilter] = useState("tutte");
     const [onlyNotMaxed, setOnlyNotMaxed] = useState(false);
-    const [sortKey, setSortKey] = useState("nome");
+    const [sortKey, setSortKey] = useState("carte_asc");
+    const wildCards = useWildCards(player?.tag);
 
     const rows = useMemo(() => {
         return (player?.cards || []).map((c) => {
@@ -129,6 +132,8 @@ export default function UpgradeTab() {
                 />
             </div>
 
+            <WildCardsPanel player={player} wildCards={wildCards} />
+
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <input
                     value={query}
@@ -202,6 +207,7 @@ export default function UpgradeTab() {
                                     key={card.id ?? card.name}
                                     card={card}
                                     blocks={card.blocks}
+                                    wildCount={wildCards.counts[r]}
                                 />
                             ))}
                         </div>

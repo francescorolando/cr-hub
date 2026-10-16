@@ -108,3 +108,24 @@ export function GiftIcon(props) {
     </Icon>
   );
 }
+
+// avviso pieno (cerchio colorato + "!" in contrasto): il colore del cerchio
+// è currentColor, il "!" usa il colore del pannello, così resta leggibile sia
+// nel tema chiaro (oro scuro + bianco) che in quello scuro (oro chiaro + viola)
+export function AlertIcon({ className = "h-5 w-5", ...props }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...props}>
+      <circle cx="12" cy="12" r="11" fill="currentColor" />
+      <path d="M12 6.5v7" strokeWidth="3" strokeLinecap="round" className="stroke-panel" />
+      <circle cx="12" cy="17.6" r="1.7" className="fill-panel" />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Icon>
+  );
+}
