@@ -428,9 +428,14 @@ function DeckPanel({ player }) {
             <div className="grid grid-cols-4 gap-x-2 gap-y-4">
                 {deck.map((card, index) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
-                    const role = isChampion ? "champion" : roles[card.id] || null;
-                    const showPlaceholder =
-                        !isChampion && !role && availableRoleOptions(card, index).length > 0;
+                    const options = availableRoleOptions(card, index);
+                    // un ruolo salvato che questa carta/posizione non ammette
+                    // (es. "evo" su un Mini P.E.K.K.A, salvato dalla vecchia
+                    // lettura di evolutionLevel) viene ignorato, non mostrato
+                    const storedRole = roles[card.id] || null;
+                    const validRole = options.includes(storedRole) ? storedRole : null;
+                    const role = isChampion ? "champion" : validRole;
+                    const showPlaceholder = !isChampion && !role && options.length > 0;
                     return (
                         <DeckCard
                             key={card.id ?? card.name}
@@ -441,10 +446,7 @@ function DeckPanel({ player }) {
                             onCycle={
                                 isChampion
                                     ? undefined
-                                    : () => {
-                                          const current = roles[card.id] || null;
-                                          setRole(card.id, nextDeckRole(card, current, index));
-                                      }
+                                    : () => setRole(card.id, nextDeckRole(card, validRole, index))
                             }
                         />
                     );

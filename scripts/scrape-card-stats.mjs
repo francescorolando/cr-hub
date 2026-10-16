@@ -1,6 +1,8 @@
-// One-off script (non fa parte della build Next.js): genera lib/cardStats.js
-// leggendo il wikitext grezzo di clashroyale.fandom.com per ogni carta del
-// catalogo ufficiale. La pagina HTML renderizzata risponde 403 da script,
+// Script (non fa parte della build Next.js): genera
+// lib/cardLegacyStatsSnapshot.mjs leggendo il wikitext grezzo di
+// clashroyale.fandom.com per ogni carta del catalogo ufficiale. Primo passo
+// di npm run update-stats; il file dell'app (lib/cardStats.js) lo genera poi
+// scripts/fetch-card-stats.mjs, che usa questa istantanea come fallback. La pagina HTML renderizzata risponde 403 da script,
 // ma l'endpoint MediaWiki action=parse risponde 200 e contiene, non ancora
 // processate, le variabili che il sito usa per calcolare la tabella livelli
 // (hp_11/dmg_11/atk_speed -> valore(livello) = valore_11 * 1.1^(livello-11)).
@@ -37,6 +39,26 @@ async function fetchCatalog() {
 // override manuali per carte il cui titolo pagina wiki non coincide col nome
 // inglese dell'API (verificato a mano quando lo scraping fallisce per queste)
 const PAGE_NAME_OVERRIDES = {};
+
+// voci scritte a mano per carte che il wiki non ha ancora (o la cui pagina
+// non ha una tabella leggibile): usate solo se lo scraping di quella carta
+// fallisce, vedi in fondo a main().
+const HAND_ADDED = {
+  // Ronin: hp11/dmg11 presi da uno screenshot in-game del livello assoluto
+  // 11 reale (2026-07-24, vedi git log). Le sue stat vere arrivano comunque
+  // da statsroyale: questa voce serve solo da riserva.
+  26000106: {
+    name: "Ronin",
+    type: "troop",
+    hp11: 1779,
+    dmg11: 337,
+    atkSpeed: 1.4,
+    speed: "Fast (90)",
+    deployTime: 1,
+    target: "Ground",
+    count: 1,
+  },
+};
 
 function wikiPageName(cardName) {
   return PAGE_NAME_OVERRIDES[cardName] || cardName;
@@ -202,61 +224,40 @@ async function main() {
     await new Promise((r) => setTimeout(r, 150));
   }
 
-  const header = `// Statistiche di combattimento per carta, estratte da clashroyale.fandom.com
-// tramite scripts/scrape-card-stats.mjs (endpoint MediaWiki action=parse,
-// prop=wikitext) il ${new Date().toISOString().slice(0, 10)}.
+  // carte che il wiki non copre ancora: si usa la voce scritta a mano, ma
+  // solo finché lo scraping fallisce — appena il wiki ha una tabella
+  // leggibile, vince il wiki e la voce manuale si può togliere.
+  const handAddedUsed = [];
+  for (const [id, entry] of Object.entries(HAND_ADDED)) {
+    if (results[id]) continue;
+    results[id] = entry;
+    handAddedUsed.push(entry.name);
+  }
+
+  const header = `// Istantanea di sola lettura delle statistiche 'fonte wiki'
+// (clashroyale.fandom.com, endpoint MediaWiki action=parse, prop=wikitext),
+// generata da scripts/scrape-card-stats.mjs il ${new Date().toISOString().slice(0, 10)} — non modificare a
+// mano, rilanciare lo script (o npm run update-stats).
 //
-// L'API ufficiale di Clash Royale non espone NESSUNA statistica di
-// combattimento (verificato su /players/{tag} e sul catalogo /cards): questi
-// dati esistono solo qui, presi da un'unica fonte pubblica via script, non
-// incrociati a mano voce per voce come lib/cardLeveling.js.
+// Usata da scripts/fetch-card-stats.mjs come fallback per le carte che la
+// fonte statsroyale non copre e come riferimento per validare gli
+// incantesimi (vedi il commento di testa di lib/cardStats.js). NON
+// importare altrove: è solo input per lo script, non fa parte dell'app.
 //
-// Ogni carta ha solo il valore di riferimento a livello ASSOLUTO 11 (hp11,
-// dmg11, crownDmg11 per gli incantesimi): è lo stesso valore che il gioco usa
-// internamente, dato che ogni altro livello si ottiene con
-//   round(valore11 * 1.1 ** (livelloAssoluto - 11))
-// (formula presente nel wikitext della fonte stessa, non dedotta). I campi
-// senza suffisso numerico (atkSpeed, range, ecc.) sono costanti: non scalano
-// con il livello.
-//
-// Le statistiche dell'abilità attiva dei Champion e gli effetti delle
-// evoluzioni NON sono incluse (fuori scope v1: non sono numeri che scalano,
-// sono testo/comportamento per carta).
-//
-// Se una carta manca da questo oggetto, l'estrazione è fallita per quella
-// pagina (vedi log dello script) ed è da correggere a mano.
-export const CARD_STATS = `;
+// Ogni carta ha il valore di riferimento a livello ASSOLUTO 11 (hp11,
+// dmg11, crownDmg11 per gli incantesimi); i campi senza suffisso numerico
+// (atkSpeed, range, ecc.) sono costanti.
+export const LEGACY_CARD_STATS = `;
 
   const body = JSON.stringify(results, null, 2);
-  const footer = `;
+  writeFileSync(path.join(ROOT, "lib/cardLegacyStatsSnapshot.mjs"), `${header}${body};\n`);
 
-// valore di una stat che scala col livello, al livello assoluto richiesto —
-// stessa formula usata dalla fonte (vedi commento di testa).
-export function statAtLevel(value11, absoluteLevel) {
-  if (value11 === undefined) return undefined;
-  return Math.round(value11 * 1.1 ** (absoluteLevel - 11));
-}
-
-// tutte le stat di una carta risolte a un livello assoluto: quelle che
-// scalano vengono calcolate con statAtLevel, quelle costanti passano
-// invariate. cardMeta è l'entry del catalogo /cards (serve solo per l'id).
-export function getCardStatsAtLevel(cardMeta, absoluteLevel) {
-  const { hp11, dmg11, crownDmg11, ...constants } = CARD_STATS[cardMeta.id] || {};
-  if (!CARD_STATS[cardMeta.id]) return null;
-  return {
-    ...constants,
-    hp: statAtLevel(hp11, absoluteLevel),
-    damage: statAtLevel(dmg11, absoluteLevel),
-    crownTowerDamage: statAtLevel(crownDmg11, absoluteLevel),
-  };
-}
-`;
-  writeFileSync(path.join(ROOT, "lib/cardStats.js"), `${header}${body}${footer}`);
-
-  console.log(`OK: ${Object.keys(results).length}/${catalog.length} carte estratte.`);
-  if (failed.length) {
-    console.log(`Fallite (${failed.length}):`);
-    for (const f of failed) console.log(`  - ${f.id} ${f.name}: ${f.reason}`);
+  console.log(`OK: ${Object.keys(results).length - handAddedUsed.length}/${catalog.length} carte estratte dal wiki.`);
+  if (handAddedUsed.length) console.log(`Voci aggiunte a mano (non ancora sul wiki): ${handAddedUsed.join(", ")}`);
+  const stillMissing = failed.filter((f) => !results[f.id]);
+  if (stillMissing.length) {
+    console.log(`Fallite (${stillMissing.length}):`);
+    for (const f of stillMissing) console.log(`  - ${f.id} ${f.name}: ${f.reason}`);
   }
 }
 
