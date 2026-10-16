@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import UpgradeCardRow from "./UpgradeCardRow";
 import WildCardsPanel from "./WildCardsPanel";
+import CollapsibleSection from "./CollapsibleSection";
+import SortDropdown from "./SortDropdown";
+import { SearchIcon, CloseIcon } from "./icons";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityKey, rarityStyle } from "@/lib/rarity";
 import { remainingToMax, levelWindowBlocks, formatNumber } from "@/lib/cardLeveling";
@@ -21,6 +24,18 @@ const SORTS = {
     copie_asc: (a, b) => (a.count ?? 0) - (b.count ?? 0),
     nome: (a, b) => a.displayName.localeCompare(b.displayName, "it"),
 };
+
+const SORT_OPTIONS = [
+    { value: "carte_desc", label: "più carte rimanenti" },
+    { value: "carte_asc", label: "meno carte rimanenti" },
+    { value: "oro_desc", label: "più oro rimanente" },
+    { value: "oro_asc", label: "meno oro rimanente" },
+    { value: "livello_desc", label: "livello più alto" },
+    { value: "livello_asc", label: "livello più basso" },
+    { value: "copie_desc", label: "più copie possedute" },
+    { value: "copie_asc", label: "meno copie possedute" },
+    { value: "nome", label: "nome" },
+];
 
 export default function UpgradeTab() {
     const { player, loading } = usePlayer();
@@ -119,28 +134,33 @@ export default function UpgradeTab() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <StatTile label="Carte al massimo" value={`${totals.maxed}/${totals.total}`} />
-                <StatTile label="Carte totali mancanti" value={formatNumber(totals.cards)} />
-                <StatTile label="Oro necessario" value={formatNumber(totals.gold)} accent />
-                <StatTile label="Gemme necessarie" value={formatNumber(totals.gems)} gem />
-                <StatTile
-                    label="Dati"
-                    value="Live dal profilo"
-                    small
-                    className="col-span-2 sm:col-span-1"
-                />
-            </div>
-
-            <WildCardsPanel player={player} wildCards={wildCards} />
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Cerca tra le tue carte…"
-                    className="w-full rounded-lg border-2 border-panel-2 bg-panel px-4 py-2.5 text-sm text-ink outline-none focus:border-gold sm:min-w-50 sm:flex-1"
-                />
+            {/* da mobile 3 righe invece di 4: ricerca; rarità + "solo non al
+            massimo" affiancati (misurati: stanno anche a 360px); ordinamento a
+            tutta larghezza in fondo, con la sua etichetta. Da sm tutto in riga. */}
+            <div className="grid grid-cols-[auto_1fr] gap-2.5 sm:flex sm:flex-row sm:flex-wrap sm:gap-3">
+                {/* lente a sinistra + testo esplicito: senza, sembrava un campo
+                qualsiasi e non si capiva che fosse una ricerca */}
+                <label className="col-span-2 flex w-full items-center gap-2.5 rounded-lg border-2 border-panel-2 bg-panel px-3.5 py-2.5 text-sm text-ink focus-within:border-gold sm:min-w-50 sm:flex-1">
+                    <SearchIcon className="h-4.5 w-4.5 shrink-0 text-muted" />
+                    <input
+                        type="search"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Cerca una carta…"
+                        aria-label="Cerca una carta per nome"
+                        className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
+                    />
+                    {query && (
+                        <button
+                            type="button"
+                            onClick={() => setQuery("")}
+                            aria-label="Svuota la ricerca"
+                            className="-m-1 shrink-0 rounded-full p-1 text-muted hover:bg-panel-2 hover:text-ink"
+                        >
+                            <CloseIcon className="h-4 w-4" />
+                        </button>
+                    )}
+                </label>
                 <select
                     value={rarityFilter}
                     onChange={(e) => setRarityFilter(e.target.value)}
@@ -153,25 +173,14 @@ export default function UpgradeTab() {
                         </option>
                     ))}
                 </select>
-                <label className="flex w-full items-center gap-2 rounded-lg border-2 border-panel-2 bg-panel px-3 py-2.5 text-sm text-ink sm:w-auto">
-                    <span className="text-muted">Ordina per:</span>
-                    <select
-                        value={sortKey}
-                        onChange={(e) => setSortKey(e.target.value)}
-                        className="bg-panel text-sm text-ink outline-none"
-                    >
-                        <option value="carte_desc">più carte rimanenti</option>
-                        <option value="carte_asc">meno carte rimanenti</option>
-                        <option value="oro_desc">più oro rimanente</option>
-                        <option value="oro_asc">meno oro rimanente</option>
-                        <option value="livello_desc">livello più alto</option>
-                        <option value="livello_asc">livello più basso</option>
-                        <option value="copie_desc">più copie possedute</option>
-                        <option value="copie_asc">meno copie possedute</option>
-                        <option value="nome">nome</option>
-                    </select>
-                </label>
-                <label className="flex w-full items-center gap-2 rounded-lg border-2 border-panel-2 bg-panel px-3 py-2.5 text-sm text-muted sm:w-auto">
+                <SortDropdown
+                    label="Ordina per:"
+                    options={SORT_OPTIONS}
+                    value={sortKey}
+                    onChange={setSortKey}
+                    className="order-last col-span-2 sm:order-none"
+                />
+                <label className="flex w-full items-center gap-2 rounded-lg border-2 border-panel-2 bg-panel px-2.5 py-2.5 text-sm whitespace-nowrap text-muted sm:w-auto sm:px-3">
                     <input
                         type="checkbox"
                         checked={onlyNotMaxed}
@@ -180,6 +189,37 @@ export default function UpgradeTab() {
                     />
                     Solo non al massimo
                 </label>
+            </div>
+
+            {/* riepilogo e jolly non sono il contenuto principale: chiusi di
+            default, in barre apribili sotto ricerca e filtri */}
+            <div className="flex flex-col gap-3">
+                <CollapsibleSection
+                    title="Riepilogo"
+                    summary={`${totals.maxed}/${totals.total} carte al massimo`}
+                    storageKey="cr_section_summary_open"
+                >
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                        <StatTile
+                            label="Carte al massimo"
+                            value={`${totals.maxed}/${totals.total}`}
+                        />
+                        <StatTile
+                            label="Carte totali mancanti"
+                            value={formatNumber(totals.cards)}
+                        />
+                        <StatTile label="Oro necessario" value={formatNumber(totals.gold)} accent />
+                        <StatTile label="Gemme necessarie" value={formatNumber(totals.gems)} gem />
+                        <StatTile
+                            label="Dati"
+                            value="Live dal profilo"
+                            small
+                            className="col-span-2 sm:col-span-1"
+                        />
+                    </div>
+                </CollapsibleSection>
+
+                <WildCardsPanel player={player} wildCards={wildCards} />
             </div>
 
             {visibleRarities.map((r) => {

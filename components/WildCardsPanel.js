@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityStyle } from "@/lib/rarity";
 import { formatNumber } from "@/lib/cardLeveling";
 import { wildCardLimits } from "@/lib/wildCards";
-import { AlertIcon, ChevronDownIcon } from "@/components/icons";
+import { AlertIcon } from "@/components/icons";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import Tooltip from "@/components/Tooltip";
 
 // "3 giorni fa", "ieri", "adesso": quanto sono vecchi i numeri inseriti, così
@@ -51,73 +51,32 @@ function OverLimitAlert() {
     );
 }
 
-// su mobile la sezione si può chiudere (occupa spazio prima della lista
-// carte); la scelta resta salvata. Da lg in su è sempre aperta.
-const OPEN_KEY = "cr_wild_cards_open";
-
-function useSectionOpen() {
-    const [open, setOpen] = useState(true);
-
-    useEffect(() => {
-        try {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            if (window.localStorage.getItem(OPEN_KEY) === "false") setOpen(false);
-        } catch {
-            // storage non disponibile: resta aperta
-        }
-    }, []);
-
-    function toggle() {
-        setOpen((prev) => {
-            try {
-                window.localStorage.setItem(OPEN_KEY, String(!prev));
-            } catch {
-                // storage non disponibile: vale solo per questa sessione
-            }
-            return !prev;
-        });
-    }
-
-    return [open, toggle];
-}
-
 // wildCards = risultato di useWildCards, letto dalla pagina e passato qui: lo
 // usano anche i tooltip delle carte, che così si aggiornano mentre si scrive
 export default function WildCardsPanel({ player, wildCards }) {
     const { counts, updatedAt, setCount, hydrated } = wildCards;
-    const [open, toggle] = useSectionOpen();
     const limits = wildCardLimits(player.expLevel);
 
     return (
-        <section className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-                {/* il pulsante apre/chiude solo sotto lg: da lg in su la
-                sezione è sempre visibile e la freccia sparisce */}
-                <button
-                    type="button"
-                    onClick={toggle}
-                    aria-expanded={open}
-                    className="-my-1 flex items-center gap-1.5 py-1 text-base font-bold text-ink lg:pointer-events-none"
-                >
-                    I tuoi jolly
-                    <ChevronDownIcon
-                        className={`h-4 w-4 text-muted transition-transform lg:hidden ${open ? "rotate-180" : ""}`}
-                    />
-                </button>
-                <p className="text-xs text-muted">
-                    {hydrated ? updatedLabel(updatedAt) : "\u00a0"}
-                </p>
-            </div>
+        // chiusa di default: si compila una volta ogni tanto, non serve
+        // sempre aperta sopra la lista
+        <CollapsibleSection
+            title="I tuoi jolly"
+            summary={hydrated ? updatedLabel(updatedAt) : null}
+            storageKey="cr_section_jolly_open"
+        >
             <div
                 // 5 per riga solo da xl: fra 1024 e 1280 una casella su 5 è troppo
                 // stretta per numero + massimo + avviso
-                className={`${open ? "grid" : "hidden"} grid-cols-2 gap-2 sm:grid-cols-3 lg:grid lg:gap-3 xl:grid-cols-5`}
+                className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2 sm:grid-cols-3 lg:gap-3 xl:grid-cols-5"
             >
                 {RARITIES.map((r) => {
                     const style = rarityStyle(r);
                     const value = counts[r];
                     const limit = limits[r];
-                    const shown = value === undefined ? "" : formatNumber(value);
+                    // senza separatore delle migliaia: "12345" sta in una casella da mobile,
+                    // "12.345" no
+                    const shown = value === undefined ? "" : String(value);
                     return (
                         <label
                             key={r}
@@ -173,6 +132,6 @@ export default function WildCardsPanel({ player, wildCards }) {
                     );
                 })}
             </div>
-        </section>
+        </CollapsibleSection>
     );
 }
