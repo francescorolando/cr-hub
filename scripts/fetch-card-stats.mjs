@@ -220,9 +220,8 @@ function extractSpellCandidate(spell) {
 
   // area effect con danno diretto (Zap) o annidato un livello più sotto
   // dentro un proprio projectileData (Lightning).
-  if (aeo?.damage !== undefined) {
-    return { dmg1: aeo.damage, crownPercent: aeo.crownTowerDamagePercent };
-  }
+  const aeoDamage = normalizeDamage(aeo?.damage, aeo?.crownTowerDamagePercent);
+  if (aeoDamage) return aeoDamage;
   if (aeo?.projectileData?.damage !== undefined) {
     return { dmg1: aeo.projectileData.damage, crownPercent: aeo.projectileData.crownTowerDamagePercent };
   }
@@ -236,12 +235,33 @@ function extractSpellCandidate(spell) {
   }
 
   // incantesimo che evoca un'area di danno alla morte di un oggetto
-  // "invisibile" (Rage: la bottiglia genera l'area che fa danno).
-  if (deathAeo?.damage !== undefined) {
-    return { dmg1: deathAeo.damage, crownPercent: deathAeo.crownTowerDamagePercent };
-  }
+  // "invisibile" (Rage: la bottiglia genera l'area che fa danno). Da
+  // ottobre 2026 la fonte ha qui solo il riferimento per nome "RageDamage",
+  // senza numero: normalizeDamage lo scarta e Rage resta sul wiki.
+  const deathDamage = normalizeDamage(deathAeo?.damage, deathAeo?.crownTowerDamagePercent);
+  if (deathDamage) return deathDamage;
 
   return null;
+}
+
+// il campo damage degli area effect esiste in due forme: numero semplice
+// (formato fino ad agosto 2026) oppure, da ottobre 2026, oggetto
+// {baseDamage, towerDamage} dove towerDamage è il valore base contro le
+// torri (es. Zap {75, 19}) — convertito qui nella stessa percentuale usata
+// altrove (19/75 ≈ 25% → -75). Qualunque altra forma (es. una stringa che
+// rimanda a un'altra entità per nome, come "RageDamage") non è un numero
+// leggibile: ritorna null e la carta resta sul wiki.
+function normalizeDamage(damage, crownPercent) {
+  if (typeof damage === "number") return { dmg1: damage, crownPercent };
+  if (typeof damage?.baseDamage !== "number") return null;
+  const { baseDamage, towerDamage } = damage;
+  return {
+    dmg1: baseDamage,
+    crownPercent:
+      typeof towerDamage === "number" && baseDamage > 0
+        ? Math.round((towerDamage * 100) / baseDamage) - 100
+        : crownPercent,
+  };
 }
 
 // il valore previsto con la tabella reale deve combaciare (entro il 5%,
@@ -253,14 +273,29 @@ function withinTolerance(predicted, reference) {
   return Math.abs(predicted - reference) <= Math.max(3, reference * 0.05);
 }
 
+// incantesimi per cui un fallimento della tolleranza è dovuto al wiki
+// rimasto indietro, non a un'estrazione sbagliata — verificato con un
+// riscontro incrociato, non a occhio. L'estrazione resta automatica (segue
+// le patch future), si salta solo il confronto col wiki.
+const SKIP_WIKI_TOLERANCE = {
+  // Barbarian Barrel (2026-10-16): il barile evoca un Barbaro e la fonte
+  // reale gli dà hp1=280/dmg1=75, identici al Barbaro della carta Barbarians
+  // — che sul wiki è aggiornata (716 hp a liv. 11 = floor(280*2.56), dopo un
+  // buff). La pagina wiki del Barile invece è ferma a 670 hp: è lei a essere
+  // indietro, non la fonte reale.
+  28000015: "wiki del Barile non aggiornato al buff dei Barbari",
+};
+
 function extractSpell(spell, legacyEntry) {
   const candidate = extractSpellCandidate(spell);
   if (!candidate) return null;
 
   const predictedDmg11 = candidate.dmg1 !== undefined ? Math.floor((candidate.dmg1 * 256) / 100) : undefined;
   const predictedHp11 = candidate.hp1 !== undefined ? Math.floor((candidate.hp1 * 256) / 100) : undefined;
-  if (!withinTolerance(predictedDmg11, legacyEntry?.dmg11)) return null;
-  if (!withinTolerance(predictedHp11, legacyEntry?.hp11)) return null;
+  if (!SKIP_WIKI_TOLERANCE[spell.id]) {
+    if (!withinTolerance(predictedDmg11, legacyEntry?.dmg11)) return null;
+    if (!withinTolerance(predictedHp11, legacyEntry?.hp11)) return null;
+  }
 
   // radius/target/deployTime/count/range restano quelli del wiki (fatti
   // semplici, non la fonte del problema) — si sostituiscono solo i campi
