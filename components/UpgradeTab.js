@@ -5,10 +5,16 @@ import UpgradeCardRow from "./UpgradeCardRow";
 import WildCardsPanel from "./WildCardsPanel";
 import CollapsibleSection from "./CollapsibleSection";
 import SortDropdown from "./SortDropdown";
+import Tooltip from "./Tooltip";
 import { SearchIcon, CloseIcon } from "./icons";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityKey, rarityStyle } from "@/lib/rarity";
-import { remainingToMax, levelWindowBlocks, formatNumber } from "@/lib/cardLeveling";
+import {
+    remainingToMax,
+    levelWindowBlocks,
+    formatNumber,
+    gemsPerCardAtMax,
+} from "@/lib/cardLeveling";
 import { cardNameIt } from "@/lib/cardNamesIt";
 import { usePlayer } from "@/lib/PlayerContext";
 import { useWildCards } from "@/lib/wildCards";
@@ -36,6 +42,9 @@ const SORT_OPTIONS = [
     { value: "copie_asc", label: "meno copie possedute" },
     { value: "nome", label: "nome" },
 ];
+
+// 0,36 / 2,14 / 21,67 / 210 / 400: due decimali bastano per le comuni
+const gemPriceFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
 
 export default function UpgradeTab() {
     const { player, loading } = usePlayer();
@@ -232,13 +241,41 @@ export default function UpgradeTab() {
                         <div
                             className={`flex flex-wrap items-baseline justify-between gap-2 border-l-4 ${style.border} pl-3`}
                         >
-                            <h2 className={`text-base font-bold sm:text-lg ${style.text}`}>
-                                {RARITY_LABELS[r]}
-                            </h2>
+                            {/* prezzo di una copia ai livelli alti (dal livello 11 in su
+                            varia poco; ai livelli bassi una copia costa di più, ma i
+                            totali in gemme usano già il prezzo di ogni livello) */}
+                            <div className="flex w-full flex-wrap items-baseline justify-between gap-x-4 sm:w-auto sm:justify-start">
+                                <h2 className={`text-base font-bold sm:text-lg ${style.text}`}>
+                                    {RARITY_LABELS[r]}
+                                </h2>
+                                {/* il prezzo per copia cambia un po' da livello a livello:
+                                qui c'è quello del livello 16. Il tooltip vale per tutta la
+                                scritta, non solo per l'asterisco */}
+                                <Tooltip
+                                    className="cursor-help"
+                                    content={
+                                        <p className="text-xs text-white">
+                                            Prezzo di una copia per il livello 16. Agli altri
+                                            livelli cambia un po&apos; (es. 6 leggendarie per il
+                                            livello 12 costano 1300 gemme, circa 217 l&apos;una).
+                                            Totali e tooltip delle carte usano già il prezzo di ogni
+                                            livello.
+                                        </p>
+                                    }
+                                >
+                                    <span className="font-num text-xs text-muted sm:text-sm">
+                                        1 carta ≈{" "}
+                                        <span className="text-gem">
+                                            {gemPriceFormat.format(gemsPerCardAtMax(r))} gemme
+                                        </span>{" "}
+                                        <span className="font-bold">*</span>
+                                    </span>
+                                </Tooltip>
+                            </div>
                             <p className="font-num text-xs text-muted sm:text-sm">
                                 {subtotal.maxed}/{subtotal.total} al massimo ·{" "}
-                                {formatNumber(subtotal.cards)} carte · {formatNumber(subtotal.gold)}{" "}
-                                oro · ≈{formatNumber(subtotal.gems)} gemme rimanenti
+                                {formatNumber(subtotal.gold)} oro · {formatNumber(subtotal.cards)}{" "}
+                                carte mancanti ≈ {formatNumber(subtotal.gems)} gemme
                             </p>
                         </div>
                         <div className="shadow-soft rounded-lg border-2 border-panel-2 bg-panel px-4 [&>*:first-child]:border-t-0">
