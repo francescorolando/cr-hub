@@ -2,7 +2,7 @@
 
 import { RARITY_LABELS } from "@/lib/api";
 import { rarityKey, rarityStyle } from "@/lib/rarity";
-import { formatNumber, nextLevelCost } from "@/lib/cardLeveling";
+import { formatNumber, nextLevelCost, wildCardCoverage } from "@/lib/cardLeveling";
 import { cardNameIt } from "@/lib/cardNamesIt";
 import Tooltip from "@/components/Tooltip";
 
@@ -11,7 +11,9 @@ import Tooltip from "@/components/Tooltip";
 // 3) info livelli, 4) carte mancanti. Da 1024px in su (lg:) i blocchi 2-4
 // si affiancano in riga, ma il blocco 1 resta sempre per conto suo in cima
 // — sotto i 1024px c'era troppo poco spazio per l'affiancamento orizzontale.
-export default function UpgradeCardRow({ card, blocks }) {
+// wildCount = jolly della rarità di questa carta inseriti dal giocatore
+// (undefined = mai inseriti: niente righe sui jolly nei tooltip)
+export default function UpgradeCardRow({ card, blocks, wildCount }) {
     const key = rarityKey(card.rarity);
     const style = rarityStyle(card.rarity);
     const iconUrl = card.iconUrls?.medium || card.iconUrls?.evolutionMedium;
@@ -20,6 +22,13 @@ export default function UpgradeCardRow({ card, blocks }) {
         ? null
         : nextLevelCost({ rarity: card.rarity, level: card.level, maxLevel: card.maxLevel });
     const showNextStep = next && next.gold !== card.goldNeeded;
+    const coverage =
+        wildCount === undefined || card.maxed
+            ? null
+            : wildCardCoverage(
+                  { rarity: key, level: card.level, maxLevel: card.maxLevel, count: card.count },
+                  wildCount,
+              );
 
     return (
         <div className="flex flex-col gap-3 border-t-2 border-panel-2 py-4 lg:flex-row lg:items-center lg:gap-5">
@@ -61,7 +70,12 @@ export default function UpgradeCardRow({ card, blocks }) {
                     <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <div className="flex gap-1">
                             {blocks.map((b) => (
-                                <LevelBlock key={b.level} block={b} rarityDot={style.dot} />
+                                <LevelBlock
+                                    key={b.level}
+                                    block={b}
+                                    rarityDot={style.dot}
+                                    afterWild={coverage?.byLevel[b.level]}
+                                />
                             ))}
                         </div>
                         <p className="font-num text-xs text-muted">
@@ -93,24 +107,64 @@ export default function UpgradeCardRow({ card, blocks }) {
               (≈8.311) resta ben sotto i 256px anche col padding del
               riquadro, in nessuna carta reale — non solo in questo
               profilo. */}
-                    <div className="flex shrink-0 flex-col gap-1 rounded-lg bg-panel-2 px-4 py-2 lg:w-64 lg:items-end">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                            Carte mancanti
-                        </p>
-                        <p className="whitespace-nowrap font-num text-sm font-bold text-ink">
-                            {formatNumber(card.cardsNeeded)}{" "}
-                            <span className="font-semibold text-gem">
-                                ≈ {formatNumber(card.gemsNeeded)} gemme
-                            </span>
-                        </p>
-                    </div>
+                    <MissingBoxTooltip coverage={coverage}>
+                        <div className="flex w-full flex-col gap-1 rounded-lg bg-panel-2 px-4 py-2 lg:items-end">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                                Carte mancanti
+                            </p>
+                            <p className="whitespace-nowrap font-num text-sm font-bold text-ink">
+                                {formatNumber(card.cardsNeeded)}{" "}
+                                <span className="font-semibold text-gem">
+                                    ≈ {formatNumber(card.gemsNeeded)} gemme
+                                </span>
+                            </p>
+                        </div>
+                    </MissingBoxTooltip>
                 </>
             )}
         </div>
     );
 }
 
-function LevelBlock({ block, rarityDot }) {
+// tooltip sul riquadro "Carte mancanti": cosa manca fino al massimo se si
+// usano su questa carta i jolly inseriti. Senza jolly inseriti, il
+// riquadro resta com'era (nessun tooltip). Larghezza: piena da mobile,
+// fissa a 256px da lg (vedi commento sul riquadro).
+function MissingBoxTooltip({ coverage, children }) {
+    if (!coverage) return <div className="flex w-full shrink-0 lg:w-64">{children}</div>;
+    return (
+        <Tooltip
+            className="w-full shrink-0 lg:w-64"
+            content={
+                <div className="flex flex-col gap-0.5">
+                    <p className="text-xs text-white/60">Con i jolly:</p>
+                    {coverage.cardsAfter > 0 ? (
+                        <>
+                            <p className="font-num text-sm font-bold text-white">
+                                {formatNumber(coverage.cardsAfter)} carte mancanti
+                            </p>
+                            <p className="font-num text-xs font-semibold text-gem">
+                                ≈ {formatNumber(coverage.gemsAfter)} gemme
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-sm font-bold text-white">Puoi arrivare al livello 16</p>
+                    )}
+                    <p className="font-num text-xs text-white/60">
+                        ({formatNumber(coverage.wildUsed)} jolly utilizzati)
+                    </p>
+                </div>
+            }
+        >
+            {children}
+        </Tooltip>
+    );
+}
+
+// afterWild = { missingAfter, gemsAfter } per questo livello dopo aver
+// usato i jolly sui livelli precedenti e su questo (undefined = nessun
+// jolly inserito)
+function LevelBlock({ block, rarityDot, afterWild }) {
     if (block.state === "reached") {
         return (
             <Tooltip
@@ -138,10 +192,37 @@ function LevelBlock({ block, rarityDot }) {
                     <p className="font-num text-xs text-white/60">
                         {block.owned}/{block.needed} copie possedute
                     </p>
+                    {/* stessa forma della sezione "Con i jolly:" sotto: etichetta
+                    grigia, poi carte in bianco e gemme in verde */}
                     {missing > 0 && (
-                        <p className="font-num text-xs font-semibold text-gem">
-                            Mancano {missing} · ≈ {formatNumber(block.gems)} gemme
-                        </p>
+                        <div className="mt-1 flex flex-col gap-0.5">
+                            <p className="text-xs text-white/60">Mancano:</p>
+                            <p className="font-num text-xs font-semibold text-white">
+                                {formatNumber(missing)} carte{" "}
+                                <span className="whitespace-nowrap text-gem">
+                                    ≈ {formatNumber(block.gems)} gemme
+                                </span>
+                            </p>
+                        </div>
+                    )}
+                    {missing > 0 && afterWild && (
+                        <div className="mt-1 flex flex-col gap-0.5 border-t border-white/10 pt-1.5">
+                            {afterWild.missingAfter > 0 ? (
+                                <>
+                                    <p className="text-xs text-white/60">Con i jolly:</p>
+                                    <p className="font-num text-xs font-semibold text-white">
+                                        {formatNumber(afterWild.missingAfter)} carte{" "}
+                                        <span className="whitespace-nowrap text-gem">
+                                            ≈ {formatNumber(afterWild.gemsAfter)} gemme
+                                        </span>
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-xs font-semibold text-white">
+                                    Con i jolly puoi fare l&apos;upgrade
+                                </p>
+                            )}
+                        </div>
                     )}
                 </div>
             }

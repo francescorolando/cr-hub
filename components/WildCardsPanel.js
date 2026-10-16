@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { RARITIES, RARITY_LABELS } from "@/lib/api";
 import { rarityStyle } from "@/lib/rarity";
 import { formatNumber } from "@/lib/cardLeveling";
-import { useWildCards, wildCardLimits } from "@/lib/wildCards";
+import { wildCardLimits } from "@/lib/wildCards";
 import { AlertIcon, ChevronDownIcon } from "@/components/icons";
 import Tooltip from "@/components/Tooltip";
 
@@ -81,8 +81,10 @@ function useSectionOpen() {
     return [open, toggle];
 }
 
-export default function WildCardsPanel({ player }) {
-    const { counts, updatedAt, setCount, hydrated } = useWildCards(player.tag);
+// wildCards = risultato di useWildCards, letto dalla pagina e passato qui: lo
+// usano anche i tooltip delle carte, che così si aggiornano mentre si scrive
+export default function WildCardsPanel({ player, wildCards }) {
+    const { counts, updatedAt, setCount, hydrated } = wildCards;
     const [open, toggle] = useSectionOpen();
     const limits = wildCardLimits(player.expLevel);
 
