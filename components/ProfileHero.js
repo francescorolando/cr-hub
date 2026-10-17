@@ -18,6 +18,8 @@ import {
     availableRoleOptions,
     computeDefaultRoles,
 } from "@/lib/useDeckRoles";
+import { useBattlelog } from "@/lib/useBattlelog";
+import { battleCardRole, referenceDeck } from "@/lib/battleStats";
 
 export default function ProfileHero({ player }) {
     // la lega ATTUALE (non l'ultima stagione completata, né il record
@@ -280,7 +282,12 @@ function BadgeRow({ player, className = "" }) {
             <div className={`flex flex-wrap items-center gap-2 ${className}`}>
                 {preview.map((badge) => (
                     <Tooltip key={badge.name} content={<BadgeTooltipContent badge={badge} />}>
-                        <BadgeGlyph badge={badge} boxSize="h-14 w-14" imgSize="h-[67px] w-[67px]" fallbackSize="h-11 w-11" />
+                        <BadgeGlyph
+                            badge={badge}
+                            boxSize="h-14 w-14"
+                            imgSize="h-[67px] w-[67px]"
+                            fallbackSize="h-11 w-11"
+                        />
                     </Tooltip>
                 ))}
                 <button
@@ -321,7 +328,9 @@ function BadgeModal({ badges, onClose }) {
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between gap-3">
-                    <p className="text-lg font-bold text-ink">Tutti gli emblemi ({badges.length})</p>
+                    <p className="text-lg font-bold text-ink">
+                        Tutti gli emblemi ({badges.length})
+                    </p>
                     <button
                         type="button"
                         onClick={onClose}
@@ -340,7 +349,12 @@ function BadgeModal({ badges, onClose }) {
                 <div className="scrollbar-thin grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(56px,1fr))] content-start gap-2 overflow-y-auto sm:hidden">
                     {badges.map((badge) => (
                         <Tooltip key={badge.name} content={<BadgeTooltipContent badge={badge} />}>
-                            <BadgeGlyph badge={badge} boxSize="h-14 w-14" imgSize="h-[67px] w-[67px]" fallbackSize="h-11 w-11" />
+                            <BadgeGlyph
+                                badge={badge}
+                                boxSize="h-14 w-14"
+                                imgSize="h-[67px] w-[67px]"
+                                fallbackSize="h-11 w-11"
+                            />
                         </Tooltip>
                     ))}
                 </div>
@@ -357,7 +371,12 @@ function BadgeModal({ badges, onClose }) {
                             key={badge.name}
                             className="flex flex-col items-center gap-1 rounded-lg bg-panel-2 p-1.5 text-center"
                         >
-                            <BadgeGlyph badge={badge} boxSize="h-14 w-14" imgSize="h-[67px] w-[67px]" fallbackSize="h-11 w-11" />
+                            <BadgeGlyph
+                                badge={badge}
+                                boxSize="h-14 w-14"
+                                imgSize="h-[67px] w-[67px]"
+                                fallbackSize="h-11 w-11"
+                            />
                             <div className="min-w-0">
                                 <p className="line-clamp-2 text-xs font-semibold text-ink">
                                     {humanizeBadgeName(badge.name)}
@@ -377,18 +396,27 @@ function BadgeModal({ badges, onClose }) {
     );
 }
 
+// mazzo mostrato: quello dell'ultima partita di Classificata o del Cammino
+// dei trofei (vedi referenceDeck in lib/battleStats.js), con evoluzioni ed
+// eroi già noti dalla partita (quindi senza pulsanti). Solo se nel
+// battlelog non ce n'è nessuna si ripiega su player.currentDeck, dove i ruoli
+// vanno confermati a mano con i pulsanti.
 function DeckPanel({ player }) {
-    const deck = player.currentDeck || [];
-    const tower = (player.currentDeckSupportCards || [])[0] || null;
-    const deckKey = deckKeyFor(player, deck);
+    const { battles, loading } = useBattlelog(player.tag);
+    const reference = battles ? referenceDeck(battles) : null;
+    const profileDeck = player.currentDeck || [];
+    const deck = reference ? reference.cards : profileDeck;
+    const tower = reference ? reference.tower : (player.currentDeckSupportCards || [])[0] || null;
+    const deckKey = deckKeyFor(player, profileDeck);
     const { roles, setRole, seed, initialized } = useDeckRoles(deckKey);
 
     useEffect(() => {
-        if (deck.length === 0 || initialized) return;
-        seed(computeDefaultRoles(deck));
+        if (profileDeck.length === 0 || initialized) return;
+        seed(computeDefaultRoles(profileDeck));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deckKey, initialized]);
 
+    if (loading) return <DeckPanelSkeleton />;
     if (deck.length === 0) return null;
 
     const avgElixir = (deck.reduce((sum, c) => sum + (c.elixirCost ?? 0), 0) / deck.length).toFixed(
@@ -428,13 +456,22 @@ function DeckPanel({ player }) {
             <div className="grid grid-cols-4 gap-x-2 gap-y-4">
                 {deck.map((card, index) => {
                     const isChampion = rarityKey(card.rarity) === "champion";
+                    if (reference) {
+                        return (
+                            <DeckCard
+                                key={card.id ?? card.name}
+                                card={card}
+                                role={isChampion ? null : battleCardRole(card)}
+                            />
+                        );
+                    }
                     const options = availableRoleOptions(card, index);
                     // un ruolo salvato che questa carta/posizione non ammette
                     // (es. "evo" su un Mini P.E.K.K.A, salvato dalla vecchia
                     // lettura di evolutionLevel) viene ignorato, non mostrato
                     const storedRole = roles[card.id] || null;
                     const validRole = options.includes(storedRole) ? storedRole : null;
-                    const role = isChampion ? "champion" : validRole;
+                    const role = isChampion ? null : validRole;
                     const showPlaceholder = !isChampion && !role && options.length > 0;
                     return (
                         <DeckCard
@@ -442,12 +479,8 @@ function DeckPanel({ player }) {
                             card={card}
                             role={role}
                             showPlaceholder={showPlaceholder}
-                            nextRole={isChampion ? null : nextDeckRole(card, role, index)}
-                            onCycle={
-                                isChampion
-                                    ? undefined
-                                    : () => setRole(card.id, nextDeckRole(card, validRole, index))
-                            }
+                            nextRole={nextDeckRole(card, role, index)}
+                            onCycle={() => setRole(card.id, nextDeckRole(card, validRole, index))}
                         />
                     );
                 })}
@@ -456,12 +489,30 @@ function DeckPanel({ player }) {
     );
 }
 
+// stesso ingombro del pannello vero (intestazione + 8 carte): niente salto
+// di layout quando arriva il battlelog
+function DeckPanelSkeleton() {
+    return (
+        <div className="mx-auto flex w-full max-w-sm flex-col gap-5 xl:mx-0 xl:w-80 xl:max-w-none xl:shrink-0 xl:border-l xl:border-panel-2 xl:pl-6">
+            <div className="h-11 animate-pulse rounded-lg bg-panel-2" />
+            <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                {Array.from({ length: 8 }, (_, i) => (
+                    <div
+                        key={i}
+                        className="aspect-5/6 w-full animate-pulse rounded-lg bg-panel-2"
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // un'unica icona (freccia di scambio) per tutti i ruoli invece di
 // corona/stella diverse: il colore del bordo distingue già il tipo
-// (oro=campione, verde=eroe, colore rarità=evoluto), l'icona resta sempre
-// bianca e uguale per dire solo "tocca per cambiare".
+// (verde=eroe, colore rarità=evoluto), l'icona resta sempre bianca e
+// uguale per dire solo "tocca per cambiare". Il campione non ha pulsante:
+// è riconosciuto con certezza dalla rarità, non c'è nulla da scegliere.
 const ROLE_TONE = {
-    champion: "border-gold bg-gold",
     hero: "border-yellow-400 bg-yellow-400",
     evo: "border-elixir bg-elixir",
 };
@@ -471,24 +522,20 @@ const ROLE_TONE = {
 // otterrai toccando, non una descrizione di dove sei già.
 const NEXT_ROLE_LABEL = { evo: "EVOLUZIONE", hero: "EROE", null: "NORMALE" };
 
+// onCycle assente = ruolo letto dalla partita: nessun pulsante, la carta
+// si mostra e basta nella versione giusta
 function DeckCard({ card, role, showPlaceholder, nextRole, onCycle }) {
     const name = cardNameIt(card.name);
     const variant = role === "evo" ? "evo" : role === "hero" ? "hero" : "base";
+    const isChampion = rarityKey(card.rarity) === "champion";
     const changeTooltip = `Passa a: ${NEXT_ROLE_LABEL[nextRole]}`;
 
     let badge = null;
-    if (role === "champion") {
-        badge = (
-            <RoleBadge
-                tone={ROLE_TONE.champion}
-                tooltip="Campione: occupa uno slot Eroe/Jolly (automatico)."
-            />
-        );
-    } else if (role === "hero") {
+    if (onCycle && role === "hero") {
         badge = <RoleBadge tone={ROLE_TONE.hero} tooltip={changeTooltip} onClick={onCycle} />;
-    } else if (role === "evo") {
+    } else if (onCycle && role === "evo") {
         badge = <RoleBadge tone={ROLE_TONE.evo} tooltip={changeTooltip} onClick={onCycle} />;
-    } else if (showPlaceholder) {
+    } else if (onCycle && showPlaceholder) {
         badge = (
             <RoleBadge
                 tone="border-dashed border-muted bg-royal-deep opacity-50 hover:opacity-100"
@@ -506,13 +553,20 @@ function DeckCard({ card, role, showPlaceholder, nextRole, onCycle }) {
     // diviso corpo-evoluto misurati a mano) e ancorando in basso, il corpo
     // torna alla stessa dimensione delle carte normali e il pezzo in più
     // sporge sopra il riquadro invece di rimpicciolire tutto.
+    // anche i campioni hanno una cornice decorativa sopra e sotto: corpo
+    // della carta 117x136 contro 125x155 di una normale (misurati sul PNG
+    // 150x180). Scala 155/136 ≈ 1.14 per pareggiare l'altezza, ancorata in
+    // alto con una traslazione che porta il corpo (righe 22-158) sulle stesse
+    // righe di una carta normale (12-167): 12 = 1.14*22 + t → t ≈ -7.3%.
     const oversized = variant === "evo" || variant === "hero";
+    const scaling = oversized
+        ? "origin-bottom scale-[1.12]"
+        : isChampion
+          ? "origin-top -translate-y-[7.3%] scale-[1.14]"
+          : "";
 
     return (
-        <div
-            className="relative aspect-5/6 w-full"
-            title={`${name} · Liv. ${card.level}/${card.maxLevel}`}
-        >
+        <div className="relative aspect-5/6 w-full">
             {/* in basso a destra, non in alto: l'ingrandimento di evoluzione/eroe
           cresce verso l'alto (origin-bottom), quindi il bordo basso è
           l'unico che resta fermo esattamente sull'angolo del contenitore. */}
@@ -521,7 +575,7 @@ function DeckCard({ card, role, showPlaceholder, nextRole, onCycle }) {
                 card={card}
                 variant={variant}
                 alt={name}
-                className={`h-full w-full object-contain ${oversized ? "origin-bottom scale-[1.12]" : ""}`}
+                className={`h-full w-full object-contain ${scaling}`}
             />
         </div>
     );
