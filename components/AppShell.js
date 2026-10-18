@@ -40,14 +40,14 @@ export default function AppShell({ children }) {
             </div>
           </div>
 
-          <nav className="scrollbar-thin mx-auto mt-4 flex max-w-6xl justify-center gap-2 overflow-x-auto sm:mt-6">
+          <nav className="mx-auto mt-4 flex max-w-6xl gap-1 min-[360px]:gap-1.5 sm:mt-6 sm:justify-center sm:gap-2">
             {NAV_LINKS.map((link) => {
               const active = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`whitespace-nowrap rounded-full border-2 px-3.5 py-1.5 text-sm font-semibold transition sm:px-4 sm:py-2 ${
+                  className={`whitespace-nowrap flex-auto rounded-full border-2 px-1 py-1.5 text-center text-[11px] font-semibold transition min-[360px]:px-1.5 min-[400px]:text-xs sm:flex-none sm:px-4 sm:py-2 sm:text-sm ${
                     active
                       ? "border-gold bg-gold/10 text-gold"
                       : "border-panel-2 text-muted hover:border-elixir hover:text-elixir"
