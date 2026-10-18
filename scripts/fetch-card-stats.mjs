@@ -365,6 +365,26 @@ const PATCH_2026_10_06 = {
   26000028: { hp11: { from: 883, to: 906 } }, // Three Musketeers (fonte wiki)
 };
 
+// Bilanciamento di metà stagione del 2026-10-19 (post RoyaleAPI "Mid-Season
+// Final Balance Changes for October 2026"), stesso meccanismo del blocco
+// sopra: i "prima" del post combaciano coi nostri valori al livello 11
+// (Cannon Cart 212, Dart Goblin 151, Minion Giant 168, Flying Machine 171,
+// Electro Dragon 0.7s), i "dopo" sono convertiti a hp1/dmg1 allo stesso modo.
+// Cancellabile insieme al blocco sopra quando statsroyale si aggiorna.
+//
+// Non applicati: Void (il post dà solo il danno a 2-4 bersagli, 296 → 307,
+// noi mostriamo un altro scaglione dal wiki, 153), danno alla morte di
+// Skeleton Barrel ed evoluzione (campo che non abbiamo), massa di Cannon
+// Cart, durata degli incantamenti di Rune Giant, ritardo dell'abilità di
+// Hero Electro Wizard e dispersione degli Skeletons.
+const PATCH_2026_10_19 = {
+  26000054: { dmg1: { from: 83, to: 79 } }, // Cannon Cart 202
+  26000040: { dmg1: { from: 59, to: 56 } }, // Dart Goblin 143
+  26000107: { dmg1: { from: 66, to: 60 } }, // Minion Giant 153
+  26000057: { dmg1: { from: 67, to: 70 } }, // Flying Machine 179
+  26000063: { firstHitSpeed: { from: 0.7, to: 0.5 } }, // Electro Dragon
+};
+
 function applyPendingPatch(results, patch) {
   const applied = [];
   const alreadyLive = [];
@@ -434,6 +454,7 @@ async function main() {
   }
 
   const patch = applyPendingPatch(results, PATCH_2026_10_06);
+  const midSeasonPatch = applyPendingPatch(results, PATCH_2026_10_19);
 
   const header = `// Statistiche di combattimento per carta — fonte MISTA (vedi
 // scripts/fetch-card-stats.mjs, eseguito il ${new Date().toISOString().slice(0, 10)}):
@@ -536,6 +557,12 @@ export function getCardStatsAtLevel(cardMeta, absoluteLevel) {
   if (patch.unexpected.length) {
     console.log(`ATTENZIONE, patch 2026-10-06 non applicata, valore inatteso:`);
     for (const line of patch.unexpected) console.log(`  - ${line}`);
+  }
+  if (midSeasonPatch.applied.length) console.log(`Patch 2026-10-19 applicata a mano (fonte non ancora aggiornata): ${midSeasonPatch.applied.join(", ")}`);
+  if (midSeasonPatch.alreadyLive.length) console.log(`Patch 2026-10-19 già presente nella fonte: ${midSeasonPatch.alreadyLive.join(", ")}`);
+  if (midSeasonPatch.unexpected.length) {
+    console.log(`ATTENZIONE, patch 2026-10-19 non applicata, valore inatteso:`);
+    for (const line of midSeasonPatch.unexpected) console.log(`  - ${line}`);
   }
   if (missing.length) {
     console.log(`Mancanti del tutto (${missing.length}):`);
